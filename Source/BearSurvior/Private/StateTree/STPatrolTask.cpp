@@ -130,3 +130,14 @@ void FSTPatrolTask::ExitState(FStateTreeExecutionContext& Context, const FStateT
 
 	InstanceData.bHasActiveMoveRequest = false;
 }
+#if WITH_EDITOR
+FText FSTPatrolTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting /*= EStateTreeNodeFormatting::Text*/) const
+{
+	static_cast<void>(ID);
+	static_cast<void>(InstanceDataView);
+	static_cast<void>(BindingLookup);
+	static_cast<void>(Formatting);
+
+	return FText::FromString(TEXT("<b>Patrol</b>"));
+}
+#endif // WITH_EDITOR
