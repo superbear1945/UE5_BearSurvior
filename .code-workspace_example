@@ -1,0 +1,112 @@
+// 修改后去掉_example后缀即可正常使用
+// vscode-clangd-ue.code-workspace
+// Author: @MrWen33
+//
+// 0.   Install Clang and add to your PATH
+//
+// 1.   Replace "{YourUnrealEnginePath}" to your unreal engine absolute path.
+//      Replace "{YourProjectName}" to your project name
+//      Replace "{YourUprojectPath}" to your .uproject file absolute path
+//
+// 2.   Open this file with vscode and run task "GenCompileCommands"
+//
+// 3.   enjoy coding!
+//
+
+{
+    "folders": [
+        {
+            "name": "BearSurvior",
+            "path": "."
+        },
+        {
+            "name": "UE5",
+            "path": "C:/D/AboutCreating/Epic/UE_5.7"
+        }
+    ],
+    "settings": {
+        "typescript.tsc.autoDetect": "off",
+        "C_Cpp.intelliSenseEngine": "Disabled",
+        "C_Cpp.autocomplete": "Disabled",
+        "C_Cpp.errorSquiggles": "Disabled",
+
+        "clangd.arguments": [
+            "--compile-commands-dir=.vscode",
+            "-pretty",
+            "--clang-tidy",
+            "-j=2",
+            "--header-insertion=iwyu",
+            "--all-scopes-completion",
+            "--completion-style=detailed",
+            "--pch-storage=memory"
+        ]
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-vscode.cpptools",
+            "ms-dotnettools.csharp",
+            "llvm-vs-code-extensions.vscode-clangd"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Gen Generated Code",
+                "group": "none",
+                "command": ".\\Engine\\Binaries\\DotNET\\UnrealBuildTool\\UnrealBuildTool.exe",
+                "args": [
+                    "BearSurviorEditor",
+                    "Win64",
+                    "DebugGame",
+                    "-SkipBuild",
+                    "-project=C:/D/AboutCreating/Epic/Project/BearSurvior_UE5/BearSurvior.uproject",
+                    "-game",
+                    "-engine"
+                ],
+                "type": "shell",
+                "options": {
+                    "cwd": "C:/D/AboutCreating/Epic/UE_5.7"
+                }
+            },
+            {
+                "label": "Subtask:GenClangDatabase",
+                "group": "none",
+                "command": ".\\Engine\\Binaries\\DotNET\\UnrealBuildTool\\UnrealBuildTool.exe",
+                "args": [
+                    "BearSurviorEditor",
+                    "Win64",
+                    "DebugGame",
+                    "-SkipBuild",
+                    "-project=C:/D/AboutCreating/Epic/Project/BearSurvior_UE5/BearSurvior.uproject",
+                    "-game",
+                    "-engine",
+                    "-mode=GenerateClangDatabase"
+                ],
+                "type": "shell",
+                "options": {
+                    "cwd": "C:/D/AboutCreating/Epic/UE_5.7"
+                }
+            },
+            {
+                "label": "Subtask:MoveCompileCommands",
+                "group": "none",
+                "command": "cmd",
+                "args": [
+                    "/c",
+                    "move /Y compile_commands.json \"${workspaceFolder}\\.vscode\\compile_commands.json\""
+                ],
+                "type": "shell",
+                "options": {
+                    "cwd": "C:/D/AboutCreating/Epic/UE_5.7"
+                }
+            },
+            {
+                "label": "Gen Compile Commands",
+                "group": "none",
+                "dependsOn": ["Subtask:GenClangDatabase", "Subtask:MoveCompileCommands"],
+                "dependsOrder": "sequence"
+            }
+        ]
+    }
+}

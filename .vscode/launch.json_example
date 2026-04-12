@@ -1,0 +1,43 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to Editor",
+            "type": "cppvsdbg",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        },
+        {
+            "name": "Launch Editor",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "C:/D/AboutCreating/Epic/UE_5.7/Engine/Binaries/Win64/UnrealEditor.exe", // <-- 1. 修改您的引擎路径
+            "args": [
+                "${workspaceFolder}/BearSurvior.uproject", // <-- 2. 修改您的.uproject文件完整路径
+                "-log"
+            ],
+            "preLaunchTask": "Build BearSurvior [Development Editor Win64]", // <-- 3. 确保与tasks.json中的label匹配
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Launch Editor (Battery Saver)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "C:/D/AboutCreating/Epic/UE_5.7/Engine/Binaries/Win64/UnrealEditor.exe", // <-- 1. 不同电脑如果引擎安装路径不同，这里需要同步修改
+            "args": [
+                "${workspaceFolder}/BearSurvior.uproject", // <-- 2. 不同电脑如果工作区目录或项目名不同，这里需要同步修改 .uproject 路径
+                "-log",
+                "-NoSplash", // 减少非必要启动开销
+                "-NoSound", // 离电开发时关闭音频，降低资源占用
+                "-Windowed", // 强制窗口模式，便于搭配较低分辨率运行
+                "-ResX=1280", // 降低编辑器初始分辨率，减轻 GPU 压力
+                "-ResY=720",
+                "-ExecCmds=t.MaxFPS 30;sg.ViewDistanceQuality 0;sg.AntiAliasingQuality 0;sg.ShadowQuality 0;sg.GlobalIlluminationQuality 0;sg.ReflectionQuality 0;sg.PostProcessQuality 0;sg.TextureQuality 0;sg.EffectsQuality 0;sg.FoliageQuality 0;sg.ShadingQuality 0;r.ScreenPercentage 50;r.MotionBlurQuality 0;r.BloomQuality 0;r.AmbientOcclusionLevels 0" // 启动后立即把帧率和主要画质档位压到最低，适合仅验证逻辑和做轻量配置
+            ],
+            "preLaunchTask": "Build BearSurvior [Development Editor Win64]", // <-- 3. 不同电脑如果 tasks.json 中的任务名不同，这里要和对应 label 保持一致
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}" // <-- 4. 一般保持为工作区根目录；如果项目启动依赖其它工作目录，再按实际环境调整
+        }
+    ]
+}
