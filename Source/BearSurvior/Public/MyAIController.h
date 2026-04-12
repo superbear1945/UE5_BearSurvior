@@ -3,7 +3,9 @@
 #include "CoreMinimal.h"
 #include "Components/StateTreeComponent.h"
 #include "AIController.h"
+#include "GameFramework/Character.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "UObject/Object.h"
 #include "UObject/ObjectPtr.h"
 #include "MyAIController.generated.h"
 
@@ -56,8 +58,8 @@ protected:
 	bool bIsSeeingPlayer;
 
 	
-	// 供状态树使用的目标 Actor 引用，示例中用于存储玩家角色。
+	// 供状态树使用的目标 Character 引用，示例中用于存储玩家角色。
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI|StateTree", meta = (AllowPrivateAccess = "true"))
-	AActor* TargetActor;
+	TObjectPtr<ACharacter> TargetCharacter;
 };
 

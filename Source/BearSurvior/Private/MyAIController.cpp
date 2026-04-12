@@ -53,5 +53,5 @@ void AMyAIController::OnSeeingPlayer(AActor* UpdatedActor, FAIStimulus Stimulus)
 		
 	// 设置对应状态变量
 	bIsSeeingPlayer = Stimulus.WasSuccessfullySensed();
-	TargetActor = UpdatedActor;
+	TargetCharacter = PlayerCharacter;
 }
