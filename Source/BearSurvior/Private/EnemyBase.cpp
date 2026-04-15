@@ -4,6 +4,7 @@
 #include "EnemyBase.h"
 #include "GameFramework/Character.h"
 #include "MyAIController.h"
+#include "Engine.h"
 
 /**
  * 初始化敌人基础角色的默认属性。
@@ -38,7 +39,6 @@ void AEnemyBase::PossessedBy(AController* NewController)
 void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 /**
@@ -47,11 +47,11 @@ void AEnemyBase::Tick(float DeltaTime)
 void AEnemyBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
 void AEnemyBase::SwitchEnemyState(EEnemyState NewState)
 {
+	CurrentState = NewState;
 	// 这里可以添加状态切换时的公共逻辑，例如播放动画、修改属性等。
 	// 具体的状态切换行为可以在子类中实现。
 	switch (NewState)
@@ -66,6 +66,7 @@ void AEnemyBase::SwitchEnemyState(EEnemyState NewState)
 		case EEnemyState::Chase:
 			// 切换到追逐状态的逻辑
 			GetCharacterMovement()->MaxWalkSpeed = ChaseSpeed;
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("开始追逐")));
 			break;
 		case EEnemyState::Attack:
 			// 切换到攻击状态的逻辑

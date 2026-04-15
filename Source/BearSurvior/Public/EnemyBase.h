@@ -51,6 +51,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))	
 	float ChaseSpeed = 64.2f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))	
+	EEnemyState CurrentState = EEnemyState::Idle;
 public:
 	/** 每帧调用，用于更新敌人基础角色逻辑。 */
 	virtual void Tick(float DeltaTime) override;
@@ -58,5 +61,6 @@ public:
 	/** 绑定输入组件。 */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION(BlueprintCallable, Category = "AI|StateTree")
 	virtual void SwitchEnemyState(EEnemyState NewState);
 };

@@ -42,13 +42,12 @@ protected:
 	/** 控制器开始运行时调用，用于注册 AI 感知等初始化逻辑。 */
 	virtual void BeginPlay() override;
 
+	/** 控制器结束运行时调用，用于解绑 AI 感知回调。 */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	/** StateTree AI 组件，用于承载和驱动 State Tree 行为。 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStateTreeComponent> StateTree;
-
-	/** AI 感知组件，用于接收视觉、听觉等感知结果并分发事件。 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UAIPerceptionComponent> AIPerceptionComponent;
 
 	/** StateTree 资源引用，用于指定该控制器驱动的状态树资产。 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))

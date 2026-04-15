@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "STPatrolTask.h"
-
+#include "EnemyBase.h"
 #include "AIController.h"
 #include "AITypes.h"
 #include "GameFramework/Character.h"
@@ -59,6 +59,7 @@ namespace
 		if (MoveResult == EPathFollowingRequestResult::Failed)
 			return EStateTreeRunStatus::Failed;
 
+
 		InstanceData.bHasActiveMoveRequest = MoveResult == EPathFollowingRequestResult::RequestSuccessful;
 		return MoveResult == EPathFollowingRequestResult::AlreadyAtGoal
 			? EStateTreeRunStatus::Succeeded
@@ -84,6 +85,9 @@ EStateTreeRunStatus FSTPatrolTask::EnterState(FStateTreeExecutionContext& Contex
 	// 记录并设置巡逻速度，便于退出状态时恢复。
 	InstanceData.PreviousSpeed = ControlledCharacter->GetCharacterMovement()->MaxWalkSpeed;
 	ControlledCharacter->GetCharacterMovement()->MaxWalkSpeed = InstanceData.PatrolSpeed;
+
+	// 设置敌人移动状态
+	Cast<AEnemyBase>(InstanceData.Controller->GetPawn())->SwitchEnemyState(EEnemyState::Patrol);
 
 	return StartPatrolMove(InstanceData);
 }
