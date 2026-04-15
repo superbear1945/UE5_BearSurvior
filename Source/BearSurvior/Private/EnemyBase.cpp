@@ -2,6 +2,7 @@
 
 
 #include "EnemyBase.h"
+#include "GameFramework/Character.h"
 #include "MyAIController.h"
 
 /**
@@ -47,4 +48,32 @@ void AEnemyBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+void AEnemyBase::SwitchEnemyState(EEnemyState NewState)
+{
+	// 这里可以添加状态切换时的公共逻辑，例如播放动画、修改属性等。
+	// 具体的状态切换行为可以在子类中实现。
+	switch (NewState)
+	{
+		case EEnemyState::Idle:
+			// 切换到待机状态的逻辑
+			break;
+		case EEnemyState::Patrol:
+			// 切换到游荡状态的逻辑
+			GetCharacterMovement()->MaxWalkSpeed = PatrolSpeed;
+			break;
+		case EEnemyState::Chase:
+			// 切换到追逐状态的逻辑
+			GetCharacterMovement()->MaxWalkSpeed = ChaseSpeed;
+			break;
+		case EEnemyState::Attack:
+			// 切换到攻击状态的逻辑
+			break;
+		case EEnemyState::Dead:
+			// 切换到死亡状态的逻辑
+			break;
+		default:
+			break;
+	}
 }

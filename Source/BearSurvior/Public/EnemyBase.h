@@ -4,11 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementReplication.h"
 #include "MyAIController.h"
 #include "UObject/PropertyWrapper.h"
 #include "EnemyBase.generated.h"
 
 class AMyAIController;
+
+// 敌人当前状态
+UENUM(BlueprintType)
+enum class EEnemyState : uint8
+{
+	Idle UMETA(DisplayName = "待机"),
+	Patrol UMETA(DisplayName = "游荡"),
+	Chase UMETA(DisplayName = "追逐"),
+	Attack UMETA(DisplayName = "攻击"),
+	Dead UMETA(DisplayName = "死亡")
+};
 
 /**
  * 敌人基础角色类。
@@ -30,9 +42,15 @@ protected:
 	/** 当控制器接管此角色时调用，用于赋值 EnemyAIController。 */
 	virtual void PossessedBy(AController* NewController) override;
 
+	// 缓存敌人控制器，便于后续调用
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))	
 	TObjectPtr<AMyAIController> EnemyAIController;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))	
+	float PatrolSpeed = 27.5f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))	
+	float ChaseSpeed = 64.2f;
 public:
 	/** 每帧调用，用于更新敌人基础角色逻辑。 */
 	virtual void Tick(float DeltaTime) override;
@@ -40,4 +58,5 @@ public:
 	/** 绑定输入组件。 */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void SwitchEnemyState(EEnemyState NewState);
 };
