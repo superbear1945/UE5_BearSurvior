@@ -1,4 +1,5 @@
 #include "MyAIController.h"
+#include "Engine.h"
 #include "EnemyBase.h"
 #include "BearSurviorCharacter.h"
 #include "Components/StateTreeComponent.h"
@@ -79,6 +80,7 @@ void AMyAIController::OnForgetPlayer(AActor* UpdatedActor)
 		return;
 	}
 
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("忘记玩家")));
 	ControlledEnemy->SwitchEnemyState(EEnemyState::Idle);
 }
 
@@ -90,9 +92,11 @@ void AMyAIController::OnSeeingPlayer(AActor* UpdatedActor, FAIStimulus Stimulus)
 		return;
 		
 	// 设置对应状态变量
-	const bool bHasSuccessfullySensedPlayer = Stimulus.WasSuccessfullySensed();
-	bIsSeeingPlayer = bHasSuccessfullySensedPlayer;
-	TargetCharacter = bHasSuccessfullySensedPlayer ? PlayerCharacter : nullptr;
+	if (Stimulus.WasSuccessfullySensed())
+	{
+		bIsSeeingPlayer = true;
+		TargetCharacter = PlayerCharacter;
+	}
 
 	AEnemyBase* ControlledEnemy = GetControlledEnemy(this);
 	if (!ControlledEnemy)
@@ -100,6 +104,4 @@ void AMyAIController::OnSeeingPlayer(AActor* UpdatedActor, FAIStimulus Stimulus)
 		UE_LOG(LogTemp, Warning, TEXT("MyAIController %s has no controlled enemy when updating perception for %s."), *GetNameSafe(this), *GetNameSafe(UpdatedActor));
 		return;
 	}
-
-	ControlledEnemy->SwitchEnemyState(bHasSuccessfullySensedPlayer ? EEnemyState::Chase : EEnemyState::Idle);
 }
