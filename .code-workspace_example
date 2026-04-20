@@ -7,6 +7,7 @@
 // 1.   Replace "{YourUnrealEnginePath}" to your unreal engine absolute path.
 //      Replace "{YourProjectName}" to your project name
 //      Replace "{YourUprojectPath}" to your .uproject file absolute path
+//      Replace "{YourLlvmPath}" to your standalone LLVM absolute path
 //
 // 2.   Open this file with vscode and run task "GenCompileCommands"
 //
@@ -21,7 +22,7 @@
         },
         {
             "name": "UE5",
-            "path": "C:/D/AboutCreating/Epic/UE_5.7"
+            "path": "{YourUnrealEnginePath}"
         }
     ],
     "settings": {
@@ -29,7 +30,7 @@
         "C_Cpp.intelliSenseEngine": "Disabled",
         "C_Cpp.autocomplete": "Disabled",
         "C_Cpp.errorSquiggles": "Disabled",
-
+        "clangd.path": "{YourLlvmPath}/bin/clangd.exe",
         "clangd.arguments": [
             "--compile-commands-dir=.vscode",
             "-pretty",
@@ -60,13 +61,13 @@
                     "Win64",
                     "DebugGame",
                     "-SkipBuild",
-                    "-project=C:/D/AboutCreating/Epic/Project/BearSurvior_UE5/BearSurvior.uproject",
+                    "-project={YourUprojectPath}",
                     "-game",
                     "-engine"
                 ],
                 "type": "shell",
                 "options": {
-                    "cwd": "C:/D/AboutCreating/Epic/UE_5.7"
+                    "cwd": "{YourUnrealEnginePath}"
                 }
             },
             {
@@ -78,14 +79,14 @@
                     "Win64",
                     "DebugGame",
                     "-SkipBuild",
-                    "-project=C:/D/AboutCreating/Epic/Project/BearSurvior_UE5/BearSurvior.uproject",
+                    "-project={YourUprojectPath}",
                     "-game",
                     "-engine",
                     "-mode=GenerateClangDatabase"
                 ],
                 "type": "shell",
                 "options": {
-                    "cwd": "C:/D/AboutCreating/Epic/UE_5.7"
+                    "cwd": "{YourUnrealEnginePath}"
                 }
             },
             {
@@ -98,7 +99,7 @@
                 ],
                 "type": "shell",
                 "options": {
-                    "cwd": "C:/D/AboutCreating/Epic/UE_5.7"
+                    "cwd": "{YourUnrealEnginePath}"
                 }
             },
             {
