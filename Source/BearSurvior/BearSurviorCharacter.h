@@ -13,6 +13,7 @@ class UCameraComponent;
 class UInputAction;
 class UMainGameUserSetting;
 class UUserWidget;
+class UHealthComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -57,9 +58,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
 	UInputAction* AimAction;
 
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* BackAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component|Health")
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 public:
 
@@ -70,6 +73,9 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual UHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+	virtual void InitComponents();
 protected:
 
 	/** Initialize input action bindings */

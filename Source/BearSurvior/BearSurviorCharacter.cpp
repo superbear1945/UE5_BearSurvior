@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
+#include "Component/HealthComponent.h"
 #include "InputActionValue.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerController.h"
@@ -53,9 +54,11 @@ ABearSurviorCharacter::ABearSurviorCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 	
-
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	// 初始化组件
+	InitComponents();
 }
 
 void ABearSurviorCharacter::BeginPlay()
@@ -319,4 +322,11 @@ void ABearSurviorCharacter::TogglePauseMenu()
 	PlayerController->SetInputMode(InputMode);
 	PlayerController->bShowMouseCursor = true;
 	bIsPauseMenuOpen = true;
+}
+
+void ABearSurviorCharacter::InitComponents()
+{
+	// 创建生命组件，作为角色的核心状态组件之一。
+	// UActorComponent 不需要 Attach 操作，创建后自动归属于宿主 Actor。
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }

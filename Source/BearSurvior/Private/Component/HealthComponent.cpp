@@ -1,4 +1,4 @@
-#include "HealthComponent.h"
+#include "Component/HealthComponent.h"
 
 #include "GameFramework/Actor.h"
 

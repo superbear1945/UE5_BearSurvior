@@ -10,6 +10,7 @@
 #include "EnemyBase.generated.h"
 
 class AMyAIController;
+class UHealthComponent;
 
 // 敌人当前状态
 UENUM(BlueprintType)
@@ -54,6 +55,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AI", meta = (AllowPrivateAccess = "true"))	
 	EEnemyState CurrentState = EEnemyState::Idle;
+
+	// 生命值组件，管理血量等
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|Health", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UHealthComponent> HealthComponent;
 public:
 	/** 每帧调用，用于更新敌人基础角色逻辑。 */
 	virtual void Tick(float DeltaTime) override;
