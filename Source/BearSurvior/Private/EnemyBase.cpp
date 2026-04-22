@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "MyAIController.h"
 #include "Engine.h"
+#include "Components/WidgetComponent.h"
 
 /**
  * 初始化敌人基础角色的默认属性。
@@ -13,6 +14,10 @@ AEnemyBase::AEnemyBase()
 {
 	// 开启 Tick，便于后续在基础敌人类中扩展逐帧逻辑。
 	PrimaryActorTick.bCanEverTick = true;
+
+	// 创建UI组件，用于显示敌人血条等信息
+	UIWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("UIWidgetComponent"));
+	UIWidgetComponent->SetupAttachment(RootComponent);
 }
 
 /**
