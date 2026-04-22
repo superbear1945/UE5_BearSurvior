@@ -73,4 +73,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "AI|StateTree")
 	virtual void SwitchEnemyState(EEnemyState NewState);
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	virtual void KeepUIFacingTarget(AActor* TargetActor);
 };

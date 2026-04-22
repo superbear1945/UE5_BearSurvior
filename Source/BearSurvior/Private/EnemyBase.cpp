@@ -2,10 +2,13 @@
 
 
 #include "EnemyBase.h"
+#include "Engine/Engine.h"
+#include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 #include "MyAIController.h"
 #include "Engine.h"
 #include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 /**
  * 初始化敌人基础角色的默认属性。
@@ -28,6 +31,14 @@ void AEnemyBase::BeginPlay()
 	Super::BeginPlay();
 }
 
+void AEnemyBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 这里可以添加一些基础的逐帧逻辑，例如根据当前状态执行不同的行为等。
+	KeepUIFacingTarget(UGameplayStatics::GetPlayerPawn(this, 0));
+}
+
 /**
  * 当控制器接管此角色时调用，用于赋值 EnemyAIController。
  */
@@ -36,14 +47,6 @@ void AEnemyBase::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	EnemyAIController = Cast<AMyAIController>(NewController);
-}
-
-/**
- * 敌人基础角色的逐帧更新函数。
- */
-void AEnemyBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
 /**
@@ -82,4 +85,19 @@ void AEnemyBase::SwitchEnemyState(EEnemyState NewState)
 		default:
 			break;
 	}
+}
+
+void AEnemyBase::KeepUIFacingTarget(AActor* TargetActor)
+{
+	if (!UIWidgetComponent) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: UIWidgetComponent is not valid"), *GetName());
+		return;
+	}
+
+	FVector TargetLocation = TargetActor ? TargetActor->GetActorLocation() : GetActorLocation() + GetActorForwardVector() * 100.0f;
+	FVector DirectionToTarget = (TargetLocation - GetActorLocation()).GetSafeNormal();
+	FRotator LookAtRotation = DirectionToTarget.Rotation();
+	LookAtRotation.Roll = 0.0f;
+	UIWidgetComponent->SetWorldRotation(LookAtRotation);
 }

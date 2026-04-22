@@ -1,5 +1,5 @@
 // 武器基类。继承自物品基类，提供武器通用属性（伤害、耐久度、攻击间隔）和攻击入口。
-// 武器的近战/远程具体行为由子类附加的 MeleeComponent / RangedWeaponComponent 实现。
+// 武器的近战/远程具体行为由子类附加的 MeleeAttackComponent / RangeAttackComponent 实现。
 
 #pragma once
 
@@ -7,8 +7,8 @@
 #include "ItemBase.h"
 #include "WeaponBase.generated.h"
 
-class UMeleeComponent;
-class URangedWeaponComponent;
+class UMeleeAttackComponent;
+class URangeAttackComponent;
 
 // 武器耐久耗尽事件。
 // @param Weapon 耐久耗尽的武器。

@@ -64,6 +64,8 @@ void AMyAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AMyAIController::OnForgetPlayer(AActor* UpdatedActor)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("Hello")));
+
 	ABearSurviorCharacter *PlayerCharacter = Cast<ABearSurviorCharacter>(UpdatedActor);
 	// 如果忘记的不是玩家则直接返回，避免误触发 AI 行为。
 	if (PlayerCharacter == nullptr)
@@ -87,7 +89,6 @@ void AMyAIController::OnForgetPlayer(AActor* UpdatedActor)
 void AMyAIController::OnSeeingPlayer(AActor* UpdatedActor, FAIStimulus Stimulus)
 {
 	ABearSurviorCharacter *PlayerCharacter = Cast<ABearSurviorCharacter>(UpdatedActor);
-	// 如果看到的不是玩家则直接返回，避免误触发 AI 行为。
 	if (PlayerCharacter == nullptr)
 		return;
 		

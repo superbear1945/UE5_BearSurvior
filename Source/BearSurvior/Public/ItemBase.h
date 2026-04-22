@@ -3,7 +3,7 @@
 
 #pragma once
 
-// #include "CoreMinimal.h"
+#include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ItemBase.generated.h"
 
