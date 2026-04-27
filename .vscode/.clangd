@@ -8,3 +8,7 @@ CompileFlags:
     - "-Wno-builtins"
     - "-Wno-incompatible-library-redeclaration"
     - "-Wno-ignored-attributes"
+
+Diagnostics:
+  Suppress:
+    - builtin_definition

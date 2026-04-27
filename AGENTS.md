@@ -114,8 +114,26 @@ Source/BearSurvior/
 
 - 使用 UE 常见大括号风格：函数和多数控制块另起一行。
 - 缩进保持现有风格；当前仓库主要使用 `tab`。
-- 单行 `if` 仅在非常简单且不歧义时可省略大括号。
-- 优先早返回，避免深层嵌套。
+- **函数中优先使用卫语句（早返回），避免多层嵌套。** 先处理异常/边界情况并立即返回，主线逻辑保持在函数顶层，最大嵌套深度建议不超过 3 层。
+  ```cpp
+  // 推荐：卫语句写法
+  void Process(Foo* InFoo)
+  {
+  	if (!IsValid(InFoo))
+  		return;
+  	if (!InFoo->CanProcess())
+  		return;
+  	// 主线逻辑在此，无需嵌套
+  	DoWork(InFoo);
+  }
+  ```
+- `if`、`for`、`while` 等控制块内若**只有一行语句**，省略大括号，仅保留缩进。
+  ```cpp
+  if (!Ptr)
+  	return;
+  for (auto& Item : Items)
+  	Item.Reset();
+  ```
 - 修改旧文件时延续局部风格，不要顺手大规模格式化。
 
 ### 命名约定
