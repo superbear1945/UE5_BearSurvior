@@ -1,6 +1,6 @@
 // 武器基类实现文件。
 
-#include "WeaponBase.h"
+#include "Weapon/WeaponBase.h"
 #include "Engine/World.h"
 
 /**
@@ -8,7 +8,7 @@
  */
 AWeaponBase::AWeaponBase()
 {
-	// 武器默认不可堆叠。
+// 武器默认不可堆叠。
 	MaxStackCount = 1;
 	StackCount = 1;
 

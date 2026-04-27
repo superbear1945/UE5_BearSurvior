@@ -17,8 +17,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnMeleeHitSignature, AActor*, Hi
  * 近战攻击组件：管理近战攻击窗口、命中检测、伤害结算。
  *
  * 工作流程：
- *   1. 外部调用 BeginAttackWindow() 开启命中检测窗口。
- *   2. 组件在窗口内执行球形扫描（SphereTrace）检测可命中目标。
+ *   1. 外部调用 BeginAttackWindow() 开启命中去重窗口。
+ *   2. 外部在需要的时机主动调用 ExecuteAttack() 执行一次近战检测。
  *   3. 命中后通过 UE5 标准 ApplyDamage 接口施加伤害。
  *   4. 外部调用 EndAttackWindow() 关闭窗口，重置命中记录。
  *
@@ -98,6 +98,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Melee")
 	void EndAttackWindow();
+
+	/**
+	 * 主动执行一次近战攻击检测。
+	 * 当攻击窗口开启时，会使用 HitActorsThisSwing 防止同一挥击内重复命中。
+	 * 当攻击窗口关闭时，会将本次检测视为独立攻击，不做历史去重。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Melee")
+	void ExecuteAttack();
 
 	/**
 	 * 获取当前是否处于攻击窗口内。

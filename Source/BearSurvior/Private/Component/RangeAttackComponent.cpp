@@ -31,6 +31,7 @@ URangeAttackComponent::URangeAttackComponent()
 	bIsFiring = false;
 	bIsReloading = false;
 	CurrentAmmoInMagazine = 0;
+	AimTarget = nullptr;
 }
 
 /**
@@ -233,6 +234,14 @@ void URangeAttackComponent::AddReserveAmmo(int32 Amount)
 }
 
 /**
+ * 设置当前瞄准目标。
+ */
+void URangeAttackComponent::SetAimTarget(AActor* NewAimTarget)
+{
+	AimTarget = NewAimTarget;
+}
+
+/**
  * 执行一次射击：消耗弹药、执行射线检测、施加伤害、广播事件。
  */
 void URangeAttackComponent::FireOnce()
@@ -258,7 +267,14 @@ void URangeAttackComponent::FireOnce()
 		if (Owner)
 		{
 			const FVector Start = Owner->GetActorLocation();
-			const FVector Direction = Owner->GetActorForwardVector();
+			FVector Direction = Owner->GetActorForwardVector();
+
+			// 存在有效瞄准目标时，未命中位置也沿目标方向延展，便于统一弹道表现。
+			if (AimTarget && AimTarget != Owner)
+			{
+				Direction = (AimTarget->GetActorLocation() - Start).GetSafeNormal();
+			}
+
 			ImpactPoint = Start + Direction * MaxRange;
 		}
 	}
@@ -329,6 +345,16 @@ FHitResult URangeAttackComponent::PerformLineTrace()
 
 	const FVector Start = Owner->GetActorLocation();
 	FVector Direction = Owner->GetActorForwardVector();
+
+	// 存在有效瞄准目标时，优先朝目标方向射击；否则沿宿主前向射击。
+	if (AimTarget && AimTarget != Owner)
+	{
+		Direction = (AimTarget->GetActorLocation() - Start).GetSafeNormal();
+		if (Direction.IsNearlyZero())
+		{
+			Direction = Owner->GetActorForwardVector();
+		}
+	}
 
 	// 应用散布偏移：在锥形角度内随机偏移射线方向。
 	if (SpreadAngle > 0.0f)

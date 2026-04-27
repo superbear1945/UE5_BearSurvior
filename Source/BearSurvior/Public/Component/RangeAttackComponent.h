@@ -88,6 +88,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
 	TEnumAsByte<ECollisionChannel> TraceChannel;
 
+	// 可选的瞄准目标。设置后优先朝该目标方向射击；为空时沿宿主前向射击。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
+	TObjectPtr<AActor> AimTarget;
+
 // ────────────────────────────────────────── 状态 ──────────────────────────────────────────
 
 protected:
@@ -188,6 +192,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Range|Ammo")
 	void AddReserveAmmo(int32 Amount);
 
+	/**
+	 * 设置当前瞄准目标。
+	 * 当目标有效时，组件优先朝目标方向射击；传入空值可恢复沿宿主前向射击。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Range")
+	void SetAimTarget(AActor* NewAimTarget);
+
 protected:
 
 	/** 执行一次射击：消耗弹药、执行射线检测、施加伤害、广播事件。 */
@@ -199,7 +210,10 @@ protected:
 	/** 装弹定时器回调，装弹完成时补充弹药。 */
 	void ReloadTimerCallback();
 
-	/** 执行射线扫描检测命中目标。 */
+	/**
+	 * 执行射线扫描检测命中目标。
+	 * 当 AimTarget 有效时优先朝目标方向发射；否则沿宿主前向发射。
+	 */
 	FHitResult PerformLineTrace();
 
 	/**

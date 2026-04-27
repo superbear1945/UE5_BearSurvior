@@ -48,6 +48,29 @@ void UMeleeAttackComponent::EndAttackWindow()
 }
 
 /**
+ * 主动执行一次近战攻击检测。
+ * 攻击窗口开启时复用窗口内的命中去重；窗口关闭时视为独立攻击。
+ */
+void UMeleeAttackComponent::ExecuteAttack()
+{
+	const bool bWasInAttackWindow = bIsInAttackWindow;
+
+	// 非攻击窗口下执行的独立攻击不沿用历史命中记录，避免被旧挥击残留影响。
+	if (!bWasInAttackWindow)
+	{
+		HitActorsThisSwing.Empty();
+	}
+
+	PerformHitDetection();
+
+	// 独立攻击执行完成后立即清理本次命中记录，保证下一次独立调用重新判定。
+	if (!bWasInAttackWindow)
+	{
+		HitActorsThisSwing.Empty();
+	}
+}
+
+/**
  * 获取当前是否处于攻击窗口内。
  */
 bool UMeleeAttackComponent::IsInAttackWindow() const
@@ -61,11 +84,6 @@ bool UMeleeAttackComponent::IsInAttackWindow() const
  */
 void UMeleeAttackComponent::PerformHitDetection()
 {
-	if (!bIsInAttackWindow)
-	{
-		return;
-	}
-
 	AActor* Owner = GetOwner();
 	if (!Owner)
 	{
