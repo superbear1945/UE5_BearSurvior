@@ -1,33 +1,34 @@
 // 远程攻击组件实现文件。
+// 设计期数据由宿主武器的 DataTable 提供，通过 InitializeFromWeaponData 设置。
 
 #include "Component/RangeAttackComponent.h"
 #include "Component/HealthComponent.h"
+#include "Weapon/WeaponDataTypes.h"
 #include "Engine.h"
 #include "Engine/World.h"
-#include "DrawDebugHelpers.h"
 #include "Kismet/KismetMathLibrary.h"
 
 /**
  * 初始化组件默认配置。
+ * 设计期数值由 InitializeFromWeaponData 在 BeginPlay 时设置。
  */
 URangeAttackComponent::URangeAttackComponent()
 {
-	// 远程组件通过定时器驱动开火节奏，不需要逐帧 Tick。
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// 配置默认值。
-	BaseDamage = 20.0f;
-	FireRate = 600.0f;
-	MagazineCapacity = 30;
-	ReloadTime = 2.0f;
-	SpreadAngle = 1.0f;
-	bAutomaticFire = true;
-	MaxRange = 10000.0f;
-	DurabilityCostPerShot = 0.5f;
-	ReserveAmmo = 90;
+	// 配置默认值（防止 DataTable 未加载时引用未初始化数据）。
+	CachedBaseDamage = 20.0f;
+	CachedFireRate = 600.0f;
+	CachedMagazineCapacity = 30;
+	CachedReloadTime = 2.0f;
+	CachedSpreadAngle = 1.0f;
+	bCachedAutomaticFire = true;
+	CachedMaxRange = 10000.0f;
+	CachedDurabilityCostPerShot = 0.5f;
+	CachedReserveAmmo = 90;
 	TraceChannel = ECC_Visibility;
 
-	// 状态默认值。
+	// 运行时状态默认值。
 	bIsFiring = false;
 	bIsReloading = false;
 	CurrentAmmoInMagazine = 0;
@@ -35,17 +36,33 @@ URangeAttackComponent::URangeAttackComponent()
 }
 
 /**
+ * 从远程武器 DataTable 行数据初始化组件配置。
+ * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
+ */
+void URangeAttackComponent::InitializeFromWeaponData(const FRangedWeaponData& Data)
+{
+	CachedBaseDamage = Data.BaseDamage;
+	CachedFireRate = Data.FireRate;
+	CachedMagazineCapacity = Data.MagazineCapacity;
+	CachedReloadTime = Data.ReloadTime;
+	CachedSpreadAngle = Data.SpreadAngle;
+	bCachedAutomaticFire = Data.bAutomaticFire;
+	CachedMaxRange = Data.MaxRange;
+	CachedDurabilityCostPerShot = Data.DurabilityCostPerShot;
+	CachedReserveAmmo = Data.ReserveAmmo;
+
+	// 初始化弹匣弹药数。
+	CurrentAmmoInMagazine = CachedMagazineCapacity;
+}
+
+/**
  * 开始射击。按配置的射击模式处理开火节奏。
  */
 void URangeAttackComponent::StartFire()
 {
-	// 正在装弹时不允许射击。
 	if (bIsReloading)
-	{
 		return;
-	}
 
-	// 弹匣为空时尝试自动装弹。
 	if (CurrentAmmoInMagazine <= 0)
 	{
 		Reload();
@@ -53,14 +70,11 @@ void URangeAttackComponent::StartFire()
 	}
 
 	bIsFiring = true;
-
-	// 立即射击第一发。
 	FireOnce();
 
-	// 全自动模式下启动定时器持续射击。
-	if (bAutomaticFire && FireRate > 0.0f)
+	if (bCachedAutomaticFire && CachedFireRate > 0.0f)
 	{
-		const float FireInterval = 1.0f / FireRate;
+		const float FireInterval = 1.0f / CachedFireRate;
 		GetWorld()->GetTimerManager().SetTimer(
 			FireTimerHandle,
 			this,
@@ -79,9 +93,7 @@ void URangeAttackComponent::StopFire()
 	bIsFiring = false;
 
 	if (FireTimerHandle.IsValid())
-	{
 		GetWorld()->GetTimerManager().ClearTimer(FireTimerHandle);
-	}
 }
 
 /**
@@ -89,36 +101,25 @@ void URangeAttackComponent::StopFire()
  */
 void URangeAttackComponent::Reload()
 {
-	// 弹匣已满，无需装弹。
-	if (CurrentAmmoInMagazine >= MagazineCapacity)
-	{
+	if (CurrentAmmoInMagazine >= CachedMagazineCapacity)
 		return;
-	}
 
-	// 无储备弹药且非无限弹药模式，无法装弹。
-	if (ReserveAmmo == 0)
-	{
+	if (CachedReserveAmmo == 0)
 		return;
-	}
 
-	// 正在装弹中，不重复触发。
 	if (bIsReloading)
-	{
 		return;
-	}
 
-	// 停止射击。
 	StopFire();
 
 	bIsReloading = true;
 	OnReloadStarted.Broadcast();
 
-	// 启动装弹定时器。
 	GetWorld()->GetTimerManager().SetTimer(
 		ReloadTimerHandle,
 		this,
 		&URangeAttackComponent::ReloadTimerCallback,
-		ReloadTime,
+		CachedReloadTime,
 		false
 	);
 }
@@ -129,16 +130,12 @@ void URangeAttackComponent::Reload()
 void URangeAttackComponent::CancelReload()
 {
 	if (!bIsReloading)
-	{
 		return;
-	}
 
 	bIsReloading = false;
 
 	if (ReloadTimerHandle.IsValid())
-	{
 		GetWorld()->GetTimerManager().ClearTimer(ReloadTimerHandle);
-	}
 }
 
 /**
@@ -147,14 +144,10 @@ void URangeAttackComponent::CancelReload()
 bool URangeAttackComponent::CanFire() const
 {
 	if (bIsReloading)
-	{
 		return false;
-	}
 
 	if (CurrentAmmoInMagazine <= 0)
-	{
 		return false;
-	}
 
 	return true;
 }
@@ -188,7 +181,7 @@ bool URangeAttackComponent::IsMagazineEmpty() const
  */
 bool URangeAttackComponent::IsMagazineFull() const
 {
-	return CurrentAmmoInMagazine >= MagazineCapacity;
+	return CurrentAmmoInMagazine >= CachedMagazineCapacity;
 }
 
 /**
@@ -204,7 +197,7 @@ int32 URangeAttackComponent::GetCurrentAmmo() const
  */
 int32 URangeAttackComponent::GetMagazineCapacity() const
 {
-	return MagazineCapacity;
+	return CachedMagazineCapacity;
 }
 
 /**
@@ -212,11 +205,9 @@ int32 URangeAttackComponent::GetMagazineCapacity() const
  */
 float URangeAttackComponent::GetAmmoPercent() const
 {
-	if (MagazineCapacity <= 0)
-	{
+	if (CachedMagazineCapacity <= 0)
 		return 0.0f;
-	}
-	return static_cast<float>(CurrentAmmoInMagazine) / static_cast<float>(MagazineCapacity);
+	return static_cast<float>(CurrentAmmoInMagazine) / static_cast<float>(CachedMagazineCapacity);
 }
 
 /**
@@ -224,13 +215,10 @@ float URangeAttackComponent::GetAmmoPercent() const
  */
 void URangeAttackComponent::AddReserveAmmo(int32 Amount)
 {
-	// 无限弹药模式下不需要添加。
-	if (ReserveAmmo < 0)
-	{
+	if (CachedReserveAmmo < 0)
 		return;
-	}
 
-	ReserveAmmo = FMath::Max(0, ReserveAmmo + Amount);
+	CachedReserveAmmo = FMath::Max(0, CachedReserveAmmo + Amount);
 }
 
 /**
@@ -252,34 +240,26 @@ void URangeAttackComponent::FireOnce()
 		return;
 	}
 
-	// 消耗弹药。
 	ConsumeAmmo();
 
-	// 执行射线检测。
 	FHitResult HitResult = PerformLineTrace();
 
-	// 计算命中点（若未命中任何物体，取射线终点作为ImpactPoint）。
 	FVector ImpactPoint = HitResult.ImpactPoint;
 	if (!HitResult.bBlockingHit)
 	{
-		// 未命中任何物体时，取射线最大距离处作为 ImpactPoint。
 		AActor* Owner = GetOwner();
 		if (Owner)
 		{
 			const FVector Start = Owner->GetActorLocation();
 			FVector Direction = Owner->GetActorForwardVector();
 
-			// 存在有效瞄准目标时，未命中位置也沿目标方向延展，便于统一弹道表现。
 			if (AimTarget && AimTarget != Owner)
-			{
 				Direction = (AimTarget->GetActorLocation() - Start).GetSafeNormal();
-			}
 
-			ImpactPoint = Start + Direction * MaxRange;
+			ImpactPoint = Start + Direction * CachedMaxRange;
 		}
 	}
 
-	// 施加伤害并获取最终伤害值。
 	float FinalDamage = 0.0f;
 	AActor* HitActor = nullptr;
 	if (HitResult.bBlockingHit && HitResult.GetActor())
@@ -288,19 +268,14 @@ void URangeAttackComponent::FireOnce()
 		FinalDamage = ApplyHitDamage(HitResult);
 	}
 
-	// 广播开火事件，供外部处理枪口特效、弹壳、音效等。
 	OnFire.Broadcast(ImpactPoint, HitActor);
 
-	// 弹药耗尽时自动装弹。
 	if (CurrentAmmoInMagazine <= 0)
 	{
 		StopFire();
 
-		// 有储备弹药时自动装弹。
-		if (ReserveAmmo != 0)
-		{
+		if (CachedReserveAmmo != 0)
 			Reload();
-		}
 	}
 }
 
@@ -310,9 +285,7 @@ void URangeAttackComponent::FireOnce()
 void URangeAttackComponent::FireTimerCallback()
 {
 	if (!bIsFiring)
-	{
 		return;
-	}
 
 	FireOnce();
 }
@@ -330,8 +303,6 @@ void URangeAttackComponent::ReloadTimerCallback()
 
 /**
  * 执行射线扫描检测命中目标。
- * 从宿主 Actor 位置出发，沿宿主朝向执行射线检测。
- * 支持散布角度，射线方向会在此角度内随机偏移。
  */
 FHitResult URangeAttackComponent::PerformLineTrace()
 {
@@ -339,38 +310,28 @@ FHitResult URangeAttackComponent::PerformLineTrace()
 
 	AActor* Owner = GetOwner();
 	if (!Owner)
-	{
 		return HitResult;
-	}
 
 	const FVector Start = Owner->GetActorLocation();
 	FVector Direction = Owner->GetActorForwardVector();
 
-	// 存在有效瞄准目标时，优先朝目标方向射击；否则沿宿主前向射击。
 	if (AimTarget && AimTarget != Owner)
 	{
 		Direction = (AimTarget->GetActorLocation() - Start).GetSafeNormal();
 		if (Direction.IsNearlyZero())
-		{
 			Direction = Owner->GetActorForwardVector();
-		}
 	}
 
-	// 应用散布偏移：在锥形角度内随机偏移射线方向。
-	if (SpreadAngle > 0.0f)
+	if (CachedSpreadAngle > 0.0f)
 	{
-		const float HalfAngleRad = FMath::DegreesToRadians(SpreadAngle * 0.5f);
-
-		// 在散布锥形内随机偏移。
+		const float HalfAngleRad = FMath::DegreesToRadians(CachedSpreadAngle * 0.5f);
 		const float RandomYaw = FMath::FRandRange(-HalfAngleRad, HalfAngleRad);
 		const float RandomPitch = FMath::FRandRange(-HalfAngleRad, HalfAngleRad);
-
-		// 使用旋转矩阵将散布偏移应用到朝向上。
 		const FRotator SpreadRotator(FMath::RadiansToDegrees(RandomPitch), FMath::RadiansToDegrees(RandomYaw), 0.0f);
 		Direction = SpreadRotator.RotateVector(Direction);
 	}
 
-	const FVector End = Start + Direction * MaxRange;
+	const FVector End = Start + Direction * CachedMaxRange;
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(Owner);
@@ -382,30 +343,22 @@ FHitResult URangeAttackComponent::PerformLineTrace()
 
 /**
  * 对命中的目标施加伤害。
- * 优先查找目标上的 UHealthComponent。
+ * 伤害值从组件的缓存数据获取。
  */
 float URangeAttackComponent::ApplyHitDamage(const FHitResult& HitResult)
 {
 	AActor* HitActor = HitResult.GetActor();
 	if (!HitActor)
-	{
 		return 0.0f;
-	}
 
 	AActor* Owner = GetOwner();
 	if (!Owner)
-	{
 		return 0.0f;
-	}
 
-	// 优先查找目标上的 HealthComponent。
 	UHealthComponent* HealthComp = HitActor->FindComponentByClass<UHealthComponent>();
 	if (HealthComp)
-	{
-		return HealthComp->ApplyDamage(BaseDamage, Owner);
-	}
+		return HealthComp->ApplyDamage(CachedBaseDamage, Owner);
 
-	// 若目标无 HealthComponent，则不施加伤害并输出警告。
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("目标 %s 无 HealthComponent，未施加伤害"), *HitActor->GetName()));
 	return 0.0f;
 }
@@ -416,11 +369,9 @@ float URangeAttackComponent::ApplyHitDamage(const FHitResult& HitResult)
 void URangeAttackComponent::ConsumeAmmo()
 {
 	if (CurrentAmmoInMagazine > 0)
-	{
 		CurrentAmmoInMagazine--;
-	}
 
-	OnAmmoChanged.Broadcast(CurrentAmmoInMagazine, MagazineCapacity);
+	OnAmmoChanged.Broadcast(CurrentAmmoInMagazine, CachedMagazineCapacity);
 }
 
 /**
@@ -428,26 +379,21 @@ void URangeAttackComponent::ConsumeAmmo()
  */
 void URangeAttackComponent::RefillMagazine()
 {
-	// 计算需要补充的弹药数。
-	const int32 AmmoNeeded = MagazineCapacity - CurrentAmmoInMagazine;
+	const int32 AmmoNeeded = CachedMagazineCapacity - CurrentAmmoInMagazine;
 
 	if (AmmoNeeded <= 0)
-	{
 		return;
-	}
 
-	// 无限弹药模式（ReserveAmmo < 0），直接填满。
-	if (ReserveAmmo < 0)
+	if (CachedReserveAmmo < 0)
 	{
-		CurrentAmmoInMagazine = MagazineCapacity;
+		CurrentAmmoInMagazine = CachedMagazineCapacity;
 	}
 	else
 	{
-		// 从储备中取弹药，补充到弹匣中。
-		const int32 AmmoToTake = FMath::Min(AmmoNeeded, ReserveAmmo);
+		const int32 AmmoToTake = FMath::Min(AmmoNeeded, CachedReserveAmmo);
 		CurrentAmmoInMagazine += AmmoToTake;
-		ReserveAmmo -= AmmoToTake;
+		CachedReserveAmmo -= AmmoToTake;
 	}
 
-	OnAmmoChanged.Broadcast(CurrentAmmoInMagazine, MagazineCapacity);
+	OnAmmoChanged.Broadcast(CurrentAmmoInMagazine, CachedMagazineCapacity);
 }

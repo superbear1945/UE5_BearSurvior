@@ -1,11 +1,14 @@
 // 远程攻击组件。挂载在武器Actor上，负责远程射击的命中检测、弹药管理与开火控制。
 // 使用射线扫描（LineTrace）实现弹道命中检测，支持弹匣、装弹、自动/半自动射击模式。
+// 设计期数据（射速、弹匣等）由武器的 DataTable 提供，通过 InitializeFromWeaponData 初始化。
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "RangeAttackComponent.generated.h"
+
+struct FRangedWeaponData;
 
 // 开火事件。
 // @param ImpactPoint 命中位置。
@@ -48,49 +51,13 @@ public:
 
 public:
 
-	// 射击基础伤害值。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float BaseDamage;
-
-	// 每秒射击次数，即射速。例如 600 = 每秒10发。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float FireRate;
-
-	// 弹匣容量。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Ammo", meta = (ClampMin = "1", UIMin = "1"))
-	int32 MagazineCapacity;
-
-	// 装弹所需时间（秒）。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Ammo", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float ReloadTime;
-
-	// 子弹散布角度（度），0 表示完全精准。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Accuracy", meta = (ClampMin = "0.0", ClampMax = "45.0", UIMin = "0.0", UIMax = "45.0"))
-	float SpreadAngle;
-
-	// 是否为全自动射击模式。为 false 时为半自动（每次按键只射击一次）。
+	// 可选的瞄准目标。设置后优先朝该目标方向射击；为空时沿宿主前向射击。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
-	bool bAutomaticFire;
-
-	// 最大有效射程（厘米）。超过此距离的射线不造成伤害。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float MaxRange;
-
-	// 每次射击消耗的耐久值。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float DurabilityCostPerShot;
-
-	// 储备弹药总数（背包弹药），-1 表示无限弹药。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Ammo")
-	int32 ReserveAmmo;
+	TObjectPtr<AActor> AimTarget;
 
 	// 用于射线检测的碰撞通道。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
 	TEnumAsByte<ECollisionChannel> TraceChannel;
-
-	// 可选的瞄准目标。设置后优先朝该目标方向射击；为空时沿宿主前向射击。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
-	TObjectPtr<AActor> AimTarget;
 
 // ────────────────────────────────────────── 状态 ──────────────────────────────────────────
 
@@ -113,6 +80,35 @@ protected:
 
 	// 装弹定时器句柄，用于控制装弹时长。
 	FTimerHandle ReloadTimerHandle;
+
+	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 设置） ──────
+
+	// 基础伤害值，从武器 DataTable 读取。
+	float CachedBaseDamage;
+
+	// 每秒射击次数，从武器 DataTable 读取。
+	float CachedFireRate;
+
+	// 弹匣容量，从武器 DataTable 读取。
+	int32 CachedMagazineCapacity;
+
+	// 装弹所需时间，从武器 DataTable 读取。
+	float CachedReloadTime;
+
+	// 子弹散布角度，从武器 DataTable 读取。
+	float CachedSpreadAngle;
+
+	// 是否为全自动射击模式，从武器 DataTable 读取。
+	bool bCachedAutomaticFire;
+
+	// 最大有效射程，从武器 DataTable 读取。
+	float CachedMaxRange;
+
+	// 每次射击消耗的耐久值，从武器 DataTable 读取。
+	float CachedDurabilityCostPerShot;
+
+	// 储备弹药总数，从武器 DataTable 读取。-1 表示无限弹药。
+	int32 CachedReserveAmmo;
 
 // ────────────────────────────────────────── 事件 ──────────────────────────────────────────
 
@@ -137,6 +133,13 @@ public:
 // ────────────────────────────────────────── 方法 ──────────────────────────────────────────
 
 public:
+
+	/**
+	 * 从远程武器 DataTable 行数据初始化组件配置。
+	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
+	 * @param Data DataTable 行中解析出的远程武器数据。
+	 */
+	void InitializeFromWeaponData(const FRangedWeaponData& Data);
 
 	/** 开始射击。按配置的射击模式处理开火节奏。 */
 	UFUNCTION(BlueprintCallable, Category = "Range")
@@ -218,7 +221,7 @@ protected:
 
 	/**
 	 * 对命中的目标施加伤害。
-	 * 优先查找目标上的 UHealthComponent 调用 ApplyDamage。
+	 * 伤害值从组件缓存数据获取。
 	 * @param HitResult 命中结果。
 	 * @return 实际生效的伤害值。
 	 */

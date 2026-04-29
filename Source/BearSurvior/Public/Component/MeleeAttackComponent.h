@@ -1,11 +1,14 @@
 // 近战攻击组件。挂载在武器Actor上，负责近战攻击的命中检测与伤害结算。
 // 使用球形扫描（SphereTrace）检测范围内目标，通过 UE5 标准 ApplyDamage 施加伤害。
+// 设计期数据（伤害、攻击范围等）由武器的 DataTable 提供，通过 InitializeFromWeaponData 初始化。
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "MeleeAttackComponent.generated.h"
+
+struct FMeleeWeaponData;
 
 // 近战命中事件。
 // @param HitActor 被命中的Actor。
@@ -37,26 +40,6 @@ public:
 
 public:
 
-	// 近战基础伤害值。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float BaseDamage;
-
-	// 近战攻击范围（射线最大距离，厘米）。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float AttackRange;
-
-	// 近战扫描球体半径（厘米），越大越容易命中但手感越"粘"。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float AttackRadius;
-
-	// 每次攻击消耗的耐久值。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float DurabilityCostPerAttack;
-
-	// 攻击窗口内是否允许命中多个目标。为 false 时单次窗口只命中第一个目标。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config")
-	bool bCanHitMultipleTargets;
-
 	// 用于近战射线检测的碰撞通道。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config")
 	TEnumAsByte<ECollisionChannel> TraceChannel;
@@ -73,6 +56,23 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee|State")
 	TSet<TObjectPtr<AActor>> HitActorsThisSwing;
 
+	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 设置） ──────
+
+	// 基础伤害值，从武器 DataTable 读取。
+	float CachedBaseDamage;
+
+	// 近战攻击范围（射线最大距离，厘米），从武器 DataTable 读取。
+	float CachedAttackRange;
+
+	// 近战扫描球体半径（厘米），从武器 DataTable 读取。
+	float CachedAttackRadius;
+
+	// 每次攻击消耗的耐久值，从武器 DataTable 读取。
+	float CachedDurabilityCostPerAttack;
+
+	// 攻击窗口内是否允许命中多个目标，从武器 DataTable 读取。
+	bool bCachedCanHitMultipleTargets;
+
 // ────────────────────────────────────────── 事件 ──────────────────────────────────────────
 
 public:
@@ -84,6 +84,13 @@ public:
 // ────────────────────────────────────────── 方法 ──────────────────────────────────────────
 
 public:
+
+	/**
+	 * 从近战武器 DataTable 行数据初始化组件配置。
+	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
+	 * @param Data DataTable 行中解析出的近战武器数据。
+	 */
+	void InitializeFromWeaponData(const FMeleeWeaponData& Data);
 
 	/**
 	 * 开启攻击窗口，允许命中检测。
@@ -123,8 +130,7 @@ protected:
 
 	/**
 	 * 对命中的目标施加伤害。
-	 * 优先查找目标上的 UHealthComponent 调用 ApplyDamage，
-	 * 若目标无 HealthComponent 则使用 UE5 标准 TakeDamage。
+	 * 伤害值从组件的缓存数据获取。
 	 * @param HitResult 命中结果。
 	 * @return 实际生效的伤害值，未造成伤害时返回 0。
 	 */
