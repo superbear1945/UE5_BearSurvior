@@ -13,6 +13,7 @@
 #include "Component/HealthComponent.h"
 #include "InputActionValue.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "MainGameUserSetting.h"
 
@@ -329,4 +330,7 @@ void ABearSurviorCharacter::InitComponents()
 	// 创建生命组件，作为角色的核心状态组件之一。
 	// UActorComponent 不需要 Attach 操作，创建后自动归属于宿主 Actor。
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	// 创建 Widget 组件，用于显示角色的 3D UI。
+	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
 }

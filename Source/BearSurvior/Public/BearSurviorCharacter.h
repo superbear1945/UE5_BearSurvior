@@ -14,6 +14,7 @@ class UInputAction;
 class UMainGameUserSetting;
 class UUserWidget;
 class UHealthComponent;
+class UWidgetComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -63,6 +64,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component|Health")
 	TObjectPtr<UHealthComponent> HealthComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|3DUI")
+	TObjectPtr<UWidgetComponent> WidgetComponent;
 
 public:
 
