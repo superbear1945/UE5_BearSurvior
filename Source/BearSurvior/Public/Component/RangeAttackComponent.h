@@ -65,15 +65,15 @@ protected:
 
 	// 当前是否正在射击（开火按钮是否按住）。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|State")
-	bool bIsFiring;
+	bool bIsFiring = false;
 
 	// 当前是否正在装弹。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|State")
-	bool bIsReloading;
+	bool bIsReloading = false;
 
 	// 当前弹匣内弹药数。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|State")
-	int32 CurrentAmmoInMagazine;
+	int32 CurrentAmmoInMagazine = 0;
 
 	// 开火定时器句柄，用于控制射速节奏。
 	FTimerHandle FireTimerHandle;

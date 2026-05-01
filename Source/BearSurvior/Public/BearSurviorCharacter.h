@@ -5,7 +5,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "ItemBase.h"
 #include "Logging/LogMacros.h"
+#include "UObject/ObjectPtr.h"
 #include "BearSurviorCharacter.generated.h"
 
 class USpringArmComponent;
@@ -15,6 +17,7 @@ class UMainGameUserSetting;
 class UUserWidget;
 class UHealthComponent;
 class UWidgetComponent;
+class AItemBase;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -67,6 +70,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|3DUI")
 	TObjectPtr<UWidgetComponent> WidgetComponent;
+
+	// 当前角色手中持有的物品
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
+	TObjectPtr<AItemBase> CurrentHeldlItem = nullptr;
 
 public:
 
