@@ -58,12 +58,17 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
 	UInputAction* MouseLookAction;
 
-	/** Aim Input Action */
+	/** Secondary Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
-	UInputAction* AimAction;
+	UInputAction* SecondaryAction;
 
+	// 回退按钮，比如菜单中回到上一级或回到游戏，或者游戏中打开暂停菜单等。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* BackAction;
+
+	// 执行Action，比如开火，近战攻击，使用道具等
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* ExecuteAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component|Health")
 	TObjectPtr<UHealthComponent> HealthComponent;
@@ -73,7 +78,7 @@ protected:
 
 	// 当前角色手中持有的物品
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
-	TObjectPtr<AItemBase> CurrentHeldlItem = nullptr;
+	TObjectPtr<AItemBase> CurrentHeldItem = nullptr;
 
 public:
 
@@ -129,17 +134,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
 
-	/** Handles aim pressed inputs from either controls or UI interfaces */
+	/** Handles Secondary pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoAimStart();
+	virtual void DoSecondaryUseStart();
 
-	/** Handles aim released inputs from either controls or UI interfaces */
+	/** Handles Secondary released inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoAimEnd();
+	virtual void DoSecondaryUseEnd();
 
 	/** Handles back pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoBackAction();
+
+	// 玩家和手中物品互动时调用的接口，后续会根据需要添加更多参数来支持不同类型的互动。
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoPrimaryUseStart();
+
+	/** 玩家松开左键时调用的函数 */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoPrimaryUseEnd();
 
 	/** 切换暂停菜单状态，同时处理游戏暂停与输入模式切换 */
 	UFUNCTION(BlueprintCallable, Category="UI|Pause")
@@ -195,5 +208,12 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/**
+	 * 获取角色视角原点和朝向。
+	 * 玩家角色返回 FollowCamera 的世界位置和旋转，使远程武器射线从屏幕中心发出。
+	 * NPC 角色使用默认实现（Actor位置 + 眼睛高度 + 控制器旋转）。
+	 */
+	virtual void GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRotation) const override;
 };
 

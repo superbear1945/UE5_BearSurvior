@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "ItemBase.h"
+#include "Weapon/IUseableItem.h"
 #include "Weapon/WeaponDataTypes.h"
 #include "WeaponBase.generated.h"
 
@@ -21,7 +22,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponDurabilityDepletedSignature
  * 设计期数据从 DataTable 行读取，运行时状态由本类管理。
  */
 UCLASS(Abstract)
-class BEARSURVIOR_API AWeaponBase : public AItemBase
+class BEARSURVIOR_API AWeaponBase : public AItemBase, public IUseableItem
 {
 	GENERATED_BODY()
 
@@ -153,6 +154,11 @@ public:
 	/** 判断武器数据是否正确加载。 */
 	UFUNCTION(BlueprintPure, Category = "Weapon|DataTable")
 	bool IsDataLoaded() const;
+
+	// IUseableItem 接口实现
+	virtual void PrimaryUse_Implementation(const FVector &AimLocation, const FVector& AimDirection) override;
+	virtual void SecondaryUse_Implementation() override;
+	virtual void StopPrimaryUse_Implementation() override;
 
 protected:
 

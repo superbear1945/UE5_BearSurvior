@@ -6,9 +6,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/HitResult.h"
 #include "RangeAttackComponent.generated.h"
 
 struct FRangedWeaponData;
+struct FHitResult;
 
 // 开火事件。
 // @param ImpactPoint 命中位置。
@@ -204,6 +206,15 @@ public:
 
 protected:
 
+	/**
+	 * 获取射击的起始位置和方向。
+	 * 优先通过持有者（角色）的 GetActorEyesViewPoint 获取视角信息：
+	 *   - 玩家角色返回摄像头位置和朝向。
+	 *   - NPC 角色返回眼睛位置和控制器旋转。
+	 * 当 AimTarget 有效时方向指向目标。无持有者时回退到武器位置和朝向。
+	 */
+	void GetTraceOriginAndDirection(FVector& OutStart, FVector& OutDirection) const;
+
 	/** 执行一次射击：消耗弹药、执行射线检测、施加伤害、广播事件。 */
 	void FireOnce();
 
@@ -215,7 +226,8 @@ protected:
 
 	/**
 	 * 执行射线扫描检测命中目标。
-	 * 当 AimTarget 有效时优先朝目标方向发射；否则沿宿主前向发射。
+	 * 射线起点和方向从持有者视角获取（玩家=摄像头，NPC=眼睛位置），
+	 * 当 AimTarget 有效时优先朝目标方向发射。
 	 */
 	FHitResult PerformLineTrace();
 

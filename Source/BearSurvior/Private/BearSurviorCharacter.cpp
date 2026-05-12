@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "BearSurviorCharacter.h"
+#include "Engine/EngineTypes.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,6 +11,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
+#include "Math/MathFwd.h"
+#include "Weapon/IUseableItem.h"
 #include "Component/HealthComponent.h"
 #include "InputActionValue.h"
 #include "Blueprint/UserWidget.h"
@@ -146,14 +149,19 @@ void ABearSurviorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABearSurviorCharacter::Look);
 
-		// Aiming
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ABearSurviorCharacter::DoAimStart);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ABearSurviorCharacter::DoAimEnd);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Canceled, this, &ABearSurviorCharacter::DoAimEnd);
+		// Secondary action
+		EnhancedInputComponent->BindAction(SecondaryAction, ETriggerEvent::Started, this, &ABearSurviorCharacter::DoSecondaryUseStart);
+		EnhancedInputComponent->BindAction(SecondaryAction, ETriggerEvent::Completed, this, &ABearSurviorCharacter::DoSecondaryUseEnd);
+		EnhancedInputComponent->BindAction(SecondaryAction, ETriggerEvent::Canceled, this, &ABearSurviorCharacter::DoSecondaryUseEnd);
 
 		// Back action(example: open pause menu)
 		// 需要在编辑器内勾选Back Action的bConsumeInput属性，以确保在UI交互时也能触发该输入事件。
 		EnhancedInputComponent->BindAction(BackAction, ETriggerEvent::Started, this, &ABearSurviorCharacter::DoBackAction);
+
+		// Execute Action(示例：开火)
+		EnhancedInputComponent->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ABearSurviorCharacter::DoPrimaryUseStart);
+		EnhancedInputComponent->BindAction(ExecuteAction, ETriggerEvent::Completed, this, &ABearSurviorCharacter::DoPrimaryUseEnd);
+		EnhancedInputComponent->BindAction(ExecuteAction, ETriggerEvent::Canceled, this, &ABearSurviorCharacter::DoPrimaryUseEnd);
 	}
 	else
 	{
@@ -249,12 +257,12 @@ void ABearSurviorCharacter::DoJumpEnd()
 	StopJumping();
 }
 
-void ABearSurviorCharacter::DoAimStart()
+void ABearSurviorCharacter::DoSecondaryUseStart()
 {
 	bIsAiming = true;
 }
 
-void ABearSurviorCharacter::DoAimEnd()
+void ABearSurviorCharacter::DoSecondaryUseEnd()
 {
 	bIsAiming = false;
 }
@@ -263,6 +271,36 @@ void ABearSurviorCharacter::DoBackAction()
 {
 	// Back 输入在角色层直接触发暂停菜单切换，减少当前迭代复杂度。
 	TogglePauseMenu();
+}
+
+void ABearSurviorCharacter::DoPrimaryUseStart()
+{
+	if (CurrentHeldItem == nullptr)
+	{
+		// 后续可以添加空手交互逻辑，比如近战攻击、环境互动等，目前先输出日志以便调试。
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("DoPrimaryUseStart called but CurrentHeldItem is null."));
+		return;
+	}
+
+	// 调用当前持有物品的 PrimaryUse 接口，触发对应的使用行为（如开火、使用道具等）。
+	if (CurrentHeldItem->Implements<UUseableItem>())
+	{
+		FVector AimLocation = FVector::Zero();
+		FRotator AimRotator = FRotator::ZeroRotator;
+		GetActorEyesViewPoint(AimLocation, AimRotator);
+		IUseableItem::Execute_PrimaryUse(CurrentHeldItem, AimLocation, AimRotator.Vector());
+		return;
+	}
+
+	// 无法使用的物品，后续可以添加提示反馈，目前先输出日志以便调试。
+	UE_LOG(LogTemp, Warning, TEXT("CurrentHeldItem can't be used"));
+	return;
+}
+
+void ABearSurviorCharacter::DoPrimaryUseEnd()
+{
+	// 空实现，正在烧烤
+	return;
 }
 
 void ABearSurviorCharacter::TogglePauseMenu()
@@ -333,4 +371,22 @@ void ABearSurviorCharacter::InitComponents()
 
 	// 创建 Widget 组件，用于显示角色的 3D UI。
 	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
+}
+
+/**
+ * 获取角色视角原点和朝向。
+ * 玩家角色返回 FollowCamera 的世界位置和旋转，使远程武器射线从屏幕中心发出。
+ * 当 FollowCamera 不可用时回退到默认实现。
+ */
+void ABearSurviorCharacter::GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRotation) const
+{
+	if (FollowCamera)
+	{
+		OutLocation = FollowCamera->GetComponentLocation();
+		OutRotation = FollowCamera->GetComponentRotation();
+		return;
+	}
+
+	// 回退到默认实现，使用 Actor 位置加上眼睛高度，并结合控制器旋转来确定视角。
+	Super::GetActorEyesViewPoint(OutLocation, OutRotation);
 }

@@ -4,6 +4,7 @@
 #include "Weapon/WeaponBase.h"
 #include "Component/MeleeAttackComponent.h"
 #include "Component/RangeAttackComponent.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 
 /**
@@ -159,6 +160,8 @@ bool AWeaponBase::StartAttack()
 	bIsAttacking = true;
 	LastAttackTime = GetWorld()->GetTimeSeconds();
 
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("开始射击")));
+
 	return true;
 }
 
@@ -168,6 +171,8 @@ bool AWeaponBase::StartAttack()
 void AWeaponBase::StopAttack()
 {
 	bIsAttacking = false;
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("停止射击")));
 }
 
 /**
@@ -290,4 +295,19 @@ bool AWeaponBase::IsDataLoaded() const
 void AWeaponBase::HandleDurabilityDepleted()
 {
 	OnDurabilityDepleted.Broadcast(this);
+}
+
+void AWeaponBase::PrimaryUse_Implementation(const FVector& AimLocation, const FVector& AimDirection)
+{
+	StartAttack();
+}
+
+void AWeaponBase::SecondaryUse_Implementation()
+{
+	// 默认没有次要使用行为，子类可覆盖实现。
+}
+
+void AWeaponBase::StopPrimaryUse_Implementation()
+{
+	StopAttack();
 }

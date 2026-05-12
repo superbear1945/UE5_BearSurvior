@@ -4,6 +4,7 @@
 #include "Component/RangeAttackComponent.h"
 #include "Component/HealthComponent.h"
 #include "Weapon/WeaponDataTypes.h"
+#include "Engine/HitResult.h"
 #include "Engine.h"
 #include "Engine/World.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -247,17 +248,10 @@ void URangeAttackComponent::FireOnce()
 	FVector ImpactPoint = HitResult.ImpactPoint;
 	if (!HitResult.bBlockingHit)
 	{
-		AActor* Owner = GetOwner();
-		if (Owner)
-		{
-			const FVector Start = Owner->GetActorLocation();
-			FVector Direction = Owner->GetActorForwardVector();
-
-			if (AimTarget && AimTarget != Owner)
-				Direction = (AimTarget->GetActorLocation() - Start).GetSafeNormal();
-
-			ImpactPoint = Start + Direction * CachedMaxRange;
-		}
+		// 未命中时，计算射程末端位置作为 ImpactPoint。
+		FVector Start, Direction;
+		GetTraceOriginAndDirection(Start, Direction);
+		ImpactPoint = Start + Direction * CachedMaxRange;
 	}
 
 	float FinalDamage = 0.0f;
@@ -302,7 +296,47 @@ void URangeAttackComponent::ReloadTimerCallback()
 }
 
 /**
+ * 获取射击的起始位置和方向。
+ * 优先通过持有者（角色）的 GetActorEyesViewPoint 获取视角信息。
+ * 当 AimTarget 有效时方向指向目标。无持有者时回退到武器位置和朝向。
+ */
+void URangeAttackComponent::GetTraceOriginAndDirection(FVector& OutStart, FVector& OutDirection) const
+{
+	AActor* Owner = GetOwner();
+	if (!Owner)
+		return;
+
+	// 尝试从持有者（角色）获取眼睛位置和朝向。
+	// 玩家角色返回摄像头位置和朝向，NPC 默认返回 Actor位置+眼睛高度+控制器旋转。
+	APawn* WeaponOwner = Owner->GetInstigator();
+
+	UE_LOG(LogTemp, Warning, TEXT("WeaponOwner: %s"), WeaponOwner ? *WeaponOwner->GetName() : TEXT("None"));
+
+	if (WeaponOwner)
+	{
+		FRotator EyeRotation;
+		WeaponOwner->GetActorEyesViewPoint(OutStart, EyeRotation);
+		OutDirection = EyeRotation.Vector();
+
+		// 有瞄准目标时覆盖方向，指向目标位置。
+		if (AimTarget && AimTarget != WeaponOwner)
+		{
+			const FVector ToTarget = (AimTarget->GetActorLocation() - OutStart).GetSafeNormal();
+			if (!ToTarget.IsNearlyZero())
+				OutDirection = ToTarget;
+		}
+		return;
+	}
+
+	// 回退：使用武器位置和朝向（无持有者场景，如固定炮台）。
+	OutStart = Owner->GetActorLocation();
+	OutDirection = Owner->GetActorForwardVector();
+}
+
+/**
  * 执行射线扫描检测命中目标。
+ * 射线起点和方向从持有者视角获取（玩家=摄像头，NPC=眼睛位置），
+ * 当 AimTarget 有效时优先朝目标方向发射。
  */
 FHitResult URangeAttackComponent::PerformLineTrace()
 {
@@ -312,16 +346,11 @@ FHitResult URangeAttackComponent::PerformLineTrace()
 	if (!Owner)
 		return HitResult;
 
-	const FVector Start = Owner->GetActorLocation();
-	FVector Direction = Owner->GetActorForwardVector();
+	// 获取射线起点和方向（从持有者眼睛位置）。
+	FVector Start, Direction;
+	GetTraceOriginAndDirection(Start, Direction);
 
-	if (AimTarget && AimTarget != Owner)
-	{
-		Direction = (AimTarget->GetActorLocation() - Start).GetSafeNormal();
-		if (Direction.IsNearlyZero())
-			Direction = Owner->GetActorForwardVector();
-	}
-
+	// 应用散布角度。
 	if (CachedSpreadAngle > 0.0f)
 	{
 		const float HalfAngleRad = FMath::DegreesToRadians(CachedSpreadAngle * 0.5f);
@@ -335,6 +364,11 @@ FHitResult URangeAttackComponent::PerformLineTrace()
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(Owner);
+
+	// 同时忽略持有者（角色自身），避免射线打到自己。
+	APawn* WeaponOwner = Owner->GetInstigator();
+	if (WeaponOwner)
+		QueryParams.AddIgnoredActor(WeaponOwner);
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, TraceChannel, QueryParams);
 
