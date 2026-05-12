@@ -304,6 +304,8 @@ void AWeaponBase::HandleDurabilityDepleted()
  */
 void AWeaponBase::PrimaryUseStart_Implementation(const FVector& AimLocation, const FVector& AimDirection)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("开始攻击")));
+
 	StartAttack();
 }
 
@@ -312,6 +314,8 @@ void AWeaponBase::PrimaryUseStart_Implementation(const FVector& AimLocation, con
  */
 void AWeaponBase::PrimaryUseEnd_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("停止攻击")));
+
 	StopAttack();
 }
 
