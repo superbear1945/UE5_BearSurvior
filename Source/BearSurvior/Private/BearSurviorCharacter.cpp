@@ -101,7 +101,6 @@ void ABearSurviorCharacter::ApplyMouseSensitivityFromSettings()
 void ABearSurviorCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	UpdateAimCamera(DeltaSeconds);
 }
 
 
@@ -260,11 +259,43 @@ void ABearSurviorCharacter::DoJumpEnd()
 void ABearSurviorCharacter::DoSecondaryUseStart()
 {
 	bIsAiming = true;
+
+	if (CurrentHeldItem == nullptr)
+	{
+		// 没有持有物品时仍保留角色本地瞄准相机效果，方便后续空手互动扩展。
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("DoSecondaryUseStart called but CurrentHeldItem is null."));
+		return;
+	}
+
+	if (CurrentHeldItem->Implements<UUseableItem>())
+	{
+		// 将右键按下事件传递给物品，支持按住瞄准、格挡或持续互动等次要使用逻辑。
+		IUseableItem::Execute_SecondaryUseStart(CurrentHeldItem);
+
+		return;
+	}
+
+	UE_LOG(LogTemplateCharacter, Warning, TEXT("CurrentHeldItem can't start secondary use."));
 }
 
 void ABearSurviorCharacter::DoSecondaryUseEnd()
 {
 	bIsAiming = false;
+
+	if (CurrentHeldItem == nullptr)
+	{
+		// 没有持有物品时只结束角色本地瞄准状态。
+		return;
+	}
+
+	if (CurrentHeldItem->Implements<UUseableItem>())
+	{
+		// 将右键松开事件传递给物品，确保持续次要行为能正确收尾。
+		IUseableItem::Execute_SecondaryUseEnd(CurrentHeldItem);
+		return;
+	}
+
+	UE_LOG(LogTemplateCharacter, Warning, TEXT("CurrentHeldItem can't end secondary use."));
 }
 
 void ABearSurviorCharacter::DoBackAction()
@@ -282,13 +313,13 @@ void ABearSurviorCharacter::DoPrimaryUseStart()
 		return;
 	}
 
-	// 调用当前持有物品的 PrimaryUse 接口，触发对应的使用行为（如开火、使用道具等）。
+	// 调用当前持有物品的 PrimaryUseStart 接口，触发按下阶段的使用行为（如开始开火、蓄力等）。
 	if (CurrentHeldItem->Implements<UUseableItem>())
 	{
 		FVector AimLocation = FVector::Zero();
 		FRotator AimRotator = FRotator::ZeroRotator;
 		GetActorEyesViewPoint(AimLocation, AimRotator);
-		IUseableItem::Execute_PrimaryUse(CurrentHeldItem, AimLocation, AimRotator.Vector());
+		IUseableItem::Execute_PrimaryUseStart(CurrentHeldItem, AimLocation, AimRotator.Vector());
 		return;
 	}
 
@@ -299,8 +330,20 @@ void ABearSurviorCharacter::DoPrimaryUseStart()
 
 void ABearSurviorCharacter::DoPrimaryUseEnd()
 {
-	// 空实现，正在烧烤
-	return;
+	if (CurrentHeldItem == nullptr)
+	{
+		// 没有持有物品时无需结束物品使用逻辑，后续可扩展空手持续交互。
+		return;
+	}
+
+	if (CurrentHeldItem->Implements<UUseableItem>())
+	{
+		// 调用当前持有物品的 PrimaryUseEnd 接口，确保全自动武器或持续道具停止使用。
+		IUseableItem::Execute_PrimaryUseEnd(CurrentHeldItem);
+		return;
+	}
+
+	UE_LOG(LogTemplateCharacter, Warning, TEXT("CurrentHeldItem can't end primary use."));
 }
 
 void ABearSurviorCharacter::TogglePauseMenu()

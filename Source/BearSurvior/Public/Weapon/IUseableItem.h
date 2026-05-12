@@ -1,4 +1,5 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// 可使用物品接口文件。
+// 统一定义主要/次要使用的按下与松开入口，供武器、道具和可交互物品响应持续输入。
 
 #pragma once
 
@@ -6,7 +7,7 @@
 #include "UObject/Interface.h"
 #include "IUseableItem.generated.h"
 
-// This class does not need to be modified.
+// UE 反射接口声明：让实现类可以被蓝图和 C++ 统一识别为可使用物品。
 UINTERFACE(MinimalAPI)
 class UUseableItem : public UInterface
 {
@@ -14,23 +15,27 @@ class UUseableItem : public UInterface
 };
 
 /**
- * 
+ * 可使用物品接口。
+ * 输入事件拆分为 Start/End，便于全自动武器、蓄力道具和按住右键互动等持续行为管理生命周期。
  */
 class BEARSURVIOR_API IUseableItem
 {
 	GENERATED_BODY()
 
-	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	// 主要的使用接口，对应鼠标左键，比如开火、近战攻击、使用道具等。后续可以根据需要添加更多接口来支持不同类型的使用行为。
+	// 主要使用开始接口，对应鼠标左键按下，比如开始开火、近战攻击、使用道具等。
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Default")
-	void PrimaryUse(const FVector &AimLocation, const FVector &AimDirection);
+	void PrimaryUseStart(const FVector& AimLocation, const FVector& AimDirection);
 
-	// 次要的使用接口，暂时对应鼠标右键，比如瞄准、近战重击等。后续可以根据需要添加更多接口来支持不同类型的使用行为。
+	// 主要使用结束接口，对应鼠标左键松开，用于结束持续开火、蓄力、治疗等行为。
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Default")
-	void SecondaryUse();
+	void PrimaryUseEnd();
 
-	// 停止使用接口，供持续性使用行为（如持续开火、持续治疗等）在输入释放时调用，确保能够正确结束使用状态。
+	// 次要使用开始接口，对应鼠标右键按下，比如开始瞄准、格挡或按住互动。
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Default")
-	void StopPrimaryUse();
+	void SecondaryUseStart();
+
+	// 次要使用结束接口，对应鼠标右键松开，用于结束瞄准、格挡或按住互动。
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Default")
+	void SecondaryUseEnd();
 };

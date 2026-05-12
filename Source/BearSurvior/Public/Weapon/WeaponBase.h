@@ -155,10 +155,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon|DataTable")
 	bool IsDataLoaded() const;
 
-	// IUseableItem 接口实现
-	virtual void PrimaryUse_Implementation(const FVector &AimLocation, const FVector& AimDirection) override;
-	virtual void SecondaryUse_Implementation() override;
-	virtual void StopPrimaryUse_Implementation() override;
+	// IUseableItem 接口实现：武器默认将主要使用映射为攻击生命周期，次要使用留给子类扩展。
+	virtual void PrimaryUseStart_Implementation(const FVector& AimLocation, const FVector& AimDirection) override;
+	virtual void PrimaryUseEnd_Implementation() override;
+	virtual void SecondaryUseStart_Implementation() override;
+	virtual void SecondaryUseEnd_Implementation() override;
 
 protected:
 

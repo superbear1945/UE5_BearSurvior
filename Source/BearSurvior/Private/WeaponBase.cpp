@@ -5,6 +5,7 @@
 #include "Component/MeleeAttackComponent.h"
 #include "Component/RangeAttackComponent.h"
 #include "Engine/Engine.h"
+#include "Logging/LogMacros.h"
 #include "Engine/World.h"
 
 /**
@@ -297,17 +298,35 @@ void AWeaponBase::HandleDurabilityDepleted()
 	OnDurabilityDepleted.Broadcast(this);
 }
 
-void AWeaponBase::PrimaryUse_Implementation(const FVector& AimLocation, const FVector& AimDirection)
+/**
+ * 主要使用开始：武器默认在左键按下时尝试进入攻击状态。
+ * AimLocation / AimDirection 由角色视角提供，子类可在覆盖时用于射线或弹道计算。
+ */
+void AWeaponBase::PrimaryUseStart_Implementation(const FVector& AimLocation, const FVector& AimDirection)
 {
 	StartAttack();
 }
 
-void AWeaponBase::SecondaryUse_Implementation()
-{
-	// 默认没有次要使用行为，子类可覆盖实现。
-}
-
-void AWeaponBase::StopPrimaryUse_Implementation()
+/**
+ * 主要使用结束：武器默认在左键松开时停止攻击状态。
+ */
+void AWeaponBase::PrimaryUseEnd_Implementation()
 {
 	StopAttack();
+}
+
+/**
+ * 次要使用开始：基类默认不处理右键按下，留给瞄准、格挡或互动型物品覆盖。
+ */
+void AWeaponBase::SecondaryUseStart_Implementation()
+{
+	// 默认没有次要使用开始行为，子类可覆盖实现。
+}
+
+/**
+ * 次要使用结束：基类默认不处理右键松开，留给持续次要行为覆盖。
+ */
+void AWeaponBase::SecondaryUseEnd_Implementation()
+{
+	// 默认没有次要使用结束行为，子类可覆盖实现。
 }
