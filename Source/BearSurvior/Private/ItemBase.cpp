@@ -1,7 +1,12 @@
 // 物品基类实现文件。
+// 负责解析 FItemData 公共物品数据，并将展示、背包和世界外观字段同步到 Actor。
 
 #include "ItemBase.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/DataTable.h"
+
+// 空物品数据静态实例，用于 DataTable 未配置或解析失败时兜底。
+static const FItemData EmptyItemData;
 
 /**
  * 初始化物品默认属性和组件。
@@ -18,6 +23,7 @@ AItemBase::AItemBase()
 	ItemMesh->SetSimulatePhysics(true);
 
 	// 初始化默认物品数据。
+	CachedItemData = nullptr;
 	ItemDisplayName = FText::FromString(TEXT("未命名物品"));
 	ItemDescription = FText::GetEmpty();
 	ItemIcon = nullptr;
@@ -33,6 +39,62 @@ AItemBase::AItemBase()
 void AItemBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ResolveItemData();
+	SyncItemProperties();
+}
+
+/**
+ * 解析 ItemDataRow 指向的公共物品数据。
+ * 数据无效时保留构造函数中的默认值，避免影响未接入 DataTable 的测试物品。
+ */
+void AItemBase::ResolveItemData()
+{
+	if (!ItemDataRow.DataTable || ItemDataRow.RowName.IsNone())
+		return;
+
+	static const FString Context(TEXT("ItemDataResolve"));
+	CachedItemData = ItemDataRow.DataTable->FindRow<FItemData>(ItemDataRow.RowName, Context);
+
+	if (!CachedItemData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 ItemDataRow 失败，表: %s，行: %s"),
+			*GetNameSafe(this),
+			*GetNameSafe(ItemDataRow.DataTable),
+			*ItemDataRow.RowName.ToString());
+	}
+}
+
+/**
+ * 将公共物品数据同步到运行时字段。
+ * 这些字段供背包 UI、拾取提示和世界物品网格直接读取。
+ */
+void AItemBase::SyncItemProperties()
+{
+	if (!CachedItemData)
+		return;
+
+	ItemDisplayName = CachedItemData->DisplayName;
+	ItemDescription = CachedItemData->Description;
+	ItemIcon = CachedItemData->Icon.LoadSynchronous();
+	Weight = CachedItemData->Weight;
+	Rarity = CachedItemData->Rarity;
+
+	// 加载物品网格到 ItemMesh 组件上。
+	if (!CachedItemData->WeaponMesh.IsNull() && ItemMesh)
+	{
+		UStaticMesh* LoadedMesh = CachedItemData->WeaponMesh.LoadSynchronous();
+		if (LoadedMesh)
+			ItemMesh->SetStaticMesh(LoadedMesh);
+	}
+}
+
+/**
+ * 返回缓存的物品公共数据引用。
+ */
+const FItemData& AItemBase::GetItemData() const
+{
+	return CachedItemData ? *CachedItemData : EmptyItemData;
 }
 
 /**

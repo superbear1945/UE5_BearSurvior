@@ -1,22 +1,13 @@
 // 物品基类。作为项目中所有可拾取/可装备物品的公共父类。
 // 提供物品通用属性（名称、描述、重量、品质等）和基础行为虚函数（拾取、装备、卸下、丢弃）。
+// 物品公共配置由 FItemData 独立保存，武器攻击数据由对应攻击组件自行读取。
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Weapon/WeaponDataTypes.h"
 #include "ItemBase.generated.h"
-
-// 物品品质/稀有度枚举，用于背包分类、UI显示、掉落权重等。
-UENUM(BlueprintType)
-enum class EItemRarity : uint8
-{
-	Common       UMETA(DisplayName = "普通"),
-	Uncommon     UMETA(DisplayName = "优秀"),
-	Rare         UMETA(DisplayName = "稀有"),
-	Epic         UMETA(DisplayName = "史诗"),
-	Legendary    UMETA(DisplayName = "传说")
-};
 
 /**
  * 物品基类：所有可拾取物品的公共父类。
@@ -43,6 +34,10 @@ protected:
 // ────────────────────────────────────────── 数据 ──────────────────────────────────────────
 
 public:
+
+	// 物品公共数据表行引用。该数据只负责物品展示、背包字段和世界外观，不包含近战/远程攻击参数。
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|DataTable", meta = (RequiredAssetDataTags = "RowStructure=/Script/BearSurvior.ItemData"))
+	FDataTableRowHandle ItemDataRow;
 
 	// 物品显示名称，用于背包UI、拾取提示等。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
@@ -72,6 +67,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "1", UIMin = "1"))
 	int32 StackCount;
 
+protected:
+
+	// 缓存的物品公共数据指针，BeginPlay 中解析 ItemDataRow 后设置，供背包和拾取逻辑读取。
+	const FItemData* CachedItemData;
+
 // ────────────────────────────────────────── 行为 ──────────────────────────────────────────
 
 public:
@@ -96,4 +96,16 @@ protected:
 
 	/** 在游戏开始或生成时调用。 */
 	virtual void BeginPlay() override;
+
+	/** 解析 ItemDataRow 指向的公共物品数据。 */
+	virtual void ResolveItemData();
+
+	/** 将公共物品数据同步到 AItemBase 的运行时字段和显示组件。 */
+	virtual void SyncItemProperties();
+
+public:
+
+	/** 返回缓存的物品公共数据引用。数据未加载时返回空默认值。 */
+	UFUNCTION(BlueprintPure, Category = "Item|DataTable")
+	virtual const FItemData& GetItemData() const;
 };

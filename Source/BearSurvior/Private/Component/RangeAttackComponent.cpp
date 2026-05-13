@@ -1,5 +1,5 @@
 // 远程攻击组件实现文件。
-// 设计期数据由宿主武器的 DataTable 提供，通过 InitializeFromWeaponData 设置。
+// 设计期数据由独立 FRangedWeaponData 提供，通过 InitializeFromWeaponData 设置。
 
 #include "Component/RangeAttackComponent.h"
 #include "Component/HealthComponent.h"
@@ -37,7 +37,7 @@ URangeAttackComponent::URangeAttackComponent()
 }
 
 /**
- * 从远程武器 DataTable 行数据初始化组件配置。
+ * 从独立远程武器 DataTable 行数据初始化组件配置。
  * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
  */
 void URangeAttackComponent::InitializeFromWeaponData(const FRangedWeaponData& Data)

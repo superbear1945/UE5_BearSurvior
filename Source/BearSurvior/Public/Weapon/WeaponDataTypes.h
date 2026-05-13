@@ -1,13 +1,23 @@
-// 武器属性数据表行结构体定义。
-// FItemData 为物品公共字段基类，FMeleeWeaponData / FRangedWeaponData 分别对应近战/远程武器专属配置。
-// 这些结构体继承自 FTableRowBase，可直接用作 UE DataTable 的行类型，策划在编辑器中通过表格配置武器数值。
+// 物品与武器属性数据表行结构体定义。
+// FItemData 只保存物品展示与拾取层面的公共字段，FMeleeWeaponData / FRangedWeaponData 独立保存各自攻击组件所需字段。
+// 三种结构体都直接继承 FTableRowBase，可分别作为独立 DataTable 行类型，避免武器专属数据和物品公共数据互相耦合。
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "ItemBase.h"
 #include "WeaponDataTypes.generated.h"
+
+// 物品品质/稀有度枚举，用于背包分类、UI显示、掉落权重等。
+UENUM(BlueprintType)
+enum class EItemRarity : uint8
+{
+	Common       UMETA(DisplayName = "普通"),
+	Uncommon     UMETA(DisplayName = "优秀"),
+	Rare         UMETA(DisplayName = "稀有"),
+	Epic         UMETA(DisplayName = "史诗"),
+	Legendary    UMETA(DisplayName = "传说")
+};
 
 // 武器类型枚举，用于区分近战与远程武器。
 UENUM(BlueprintType)
@@ -18,8 +28,8 @@ enum class EWeaponType : uint8
 };
 
 /**
- * 物品公共数据基类：所有 DataTable 行结构体继承自此类。
- * 包含物品展示信息、公共战斗属性与耐久属性。
+ * 物品公共数据：只负责物品自身的展示、背包和世界外观字段。
+ * 武器攻击、伤害、弹药、耐久消耗等专属字段由近战/远程数据结构独立维护。
  */
 USTRUCT(BlueprintType)
 struct BEARSURVIOR_API FItemData : public FTableRowBase
@@ -50,35 +60,31 @@ struct BEARSURVIOR_API FItemData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	TSoftObjectPtr<UStaticMesh> WeaponMesh;
 
-	// ────── 公共战斗属性 ──────
-
-	// 基础伤害值，单次攻击/射击的基础伤害。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float BaseDamage = 10.0f;
-
-	// 攻击间隔，两次攻击之间的最短等待时间（秒）。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float AttackInterval = 1.0f;
-
-	// ────── 耐久属性 ──────
-
 	// 最大耐久度，耐久度上限。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Durability", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float MaxDurability = 100.0f;
-
-	// 每次攻击消耗的耐久值。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Durability", meta = (ClampMin = "0.0", UIMin = "0.0"))
-	float DurabilityCostPerAttack = 1.0f;
 };
 
 /**
- * 近战武器数据：继承自 FItemData，添加近战专属配置。
+ * 近战武器数据：独立保存近战攻击组件所需配置，不再继承 FItemData。
  * 用作 DT_MeleeWeapons DataTable 的行类型。
  */
 USTRUCT(BlueprintType)
-struct BEARSURVIOR_API FMeleeWeaponData : public FItemData
+struct BEARSURVIOR_API FMeleeWeaponData : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	// 基础伤害值，单次近战命中的基础伤害。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Combat", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float BaseDamage = 25.0f;
+
+	// 攻击间隔，两次近战攻击之间的最短等待时间（秒）。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Combat", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float AttackInterval = 1.0f;
+
+	// 每次近战攻击消耗的耐久值。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Durability", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float DurabilityCostPerAttack = 1.0f;
 
 	// 近战攻击范围（射线最大距离，厘米）。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee", meta = (ClampMin = "0.0", UIMin = "0.0"))
@@ -94,13 +100,21 @@ struct BEARSURVIOR_API FMeleeWeaponData : public FItemData
 };
 
 /**
- * 远程武器数据：继承自 FItemData，添加远程专属配置（射速、弹药、散布等）。
+ * 远程武器数据：独立保存远程攻击组件所需配置，不再继承 FItemData。
  * 用作 DT_RangedWeapons DataTable 的行类型。
  */
 USTRUCT(BlueprintType)
-struct BEARSURVIOR_API FRangedWeaponData : public FItemData
+struct BEARSURVIOR_API FRangedWeaponData : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	// 基础伤害值，单次射击命中的基础伤害。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged|Combat", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float BaseDamage = 20.0f;
+
+	// 攻击间隔，两次远程攻击入口之间的最短等待时间（秒）。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged|Combat", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float AttackInterval = 0.1f;
 
 	// 每秒射击次数，即射速。例如 600 = 每秒10发。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged", meta = (ClampMin = "0.0", UIMin = "0.0"))

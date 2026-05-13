@@ -1,6 +1,6 @@
 // 远程攻击组件。挂载在武器Actor上，负责远程射击的命中检测、弹药管理与开火控制。
 // 使用射线扫描（LineTrace）实现弹道命中检测，支持弹匣、装弹、自动/半自动射击模式。
-// 设计期数据（射速、弹匣等）由武器的 DataTable 提供，通过 InitializeFromWeaponData 初始化。
+// 设计期数据（伤害、射速、弹匣等）由独立 FRangedWeaponData 提供，通过 InitializeFromWeaponData 初始化。
 
 #pragma once
 
@@ -85,31 +85,31 @@ protected:
 
 	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 设置） ──────
 
-	// 基础伤害值，从武器 DataTable 读取。
+	// 基础伤害值，从远程武器 DataTable 读取。
 	float CachedBaseDamage;
 
-	// 每秒射击次数，从武器 DataTable 读取。
+	// 每秒射击次数，从远程武器 DataTable 读取。
 	float CachedFireRate;
 
-	// 弹匣容量，从武器 DataTable 读取。
+	// 弹匣容量，从远程武器 DataTable 读取。
 	int32 CachedMagazineCapacity;
 
-	// 装弹所需时间，从武器 DataTable 读取。
+	// 装弹所需时间，从远程武器 DataTable 读取。
 	float CachedReloadTime;
 
-	// 子弹散布角度，从武器 DataTable 读取。
+	// 子弹散布角度，从远程武器 DataTable 读取。
 	float CachedSpreadAngle;
 
-	// 是否为全自动射击模式，从武器 DataTable 读取。
+	// 是否为全自动射击模式，从远程武器 DataTable 读取。
 	bool bCachedAutomaticFire;
 
-	// 最大有效射程，从武器 DataTable 读取。
+	// 最大有效射程，从远程武器 DataTable 读取。
 	float CachedMaxRange;
 
-	// 每次射击消耗的耐久值，从武器 DataTable 读取。
+	// 每次射击消耗的耐久值，从远程武器 DataTable 读取。
 	float CachedDurabilityCostPerShot;
 
-	// 储备弹药总数，从武器 DataTable 读取。-1 表示无限弹药。
+	// 储备弹药总数，从远程武器 DataTable 读取。-1 表示无限弹药。
 	int32 CachedReserveAmmo;
 
 // ────────────────────────────────────────── 事件 ──────────────────────────────────────────
