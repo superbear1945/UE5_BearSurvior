@@ -34,6 +34,13 @@ URangeAttackComponent::URangeAttackComponent()
 	bIsReloading = false;
 	CurrentAmmoInMagazine = 0;
 	AimTarget = nullptr;
+
+	// 创建弹匣网格组件（可选），并设置默认碰撞配置。
+	if (MagazineMeshComponent == nullptr)
+	{
+		MagazineMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MagazineMesh"));
+		MagazineMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 /**

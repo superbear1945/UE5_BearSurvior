@@ -19,6 +19,7 @@
 #include "Components/WidgetComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "MainGameUserSetting.h"
+#include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -82,6 +83,11 @@ void ABearSurviorCharacter::BeginPlay()
 		// 缓存角色默认相机 FOV，用于退出瞄准时平滑恢复
 		DefaultCameraFov = FollowCamera->FieldOfView;
 	}
+
+	AimTargetBlendAlpha = bIsAiming ? 1.f : 0.f;
+
+	// 按初始瞄准状态同步一次相机参数，避免角色出生时相机状态和布尔状态不一致。
+	UpdateAimCamera();
 }
 
 void ABearSurviorCharacter::ApplyMouseSensitivityFromSettings()
@@ -104,30 +110,39 @@ void ABearSurviorCharacter::Tick(float DeltaSeconds)
 }
 
 
-// 平滑过渡摄像机位置以适应瞄准状态
-void ABearSurviorCharacter::UpdateAimCamera(float DeltaSeconds)
+// 由短时定时器驱动瞄准相机插值，平滑过渡臂长、偏移和 FOV。
+void ABearSurviorCharacter::UpdateAimCamera()
 {
-	if (!CameraBoom)
-	{
+	if (!CameraBoom && !FollowCamera)
 		return;
-	}
 
-	const float TargetAlpha = bIsAiming ? 1.f : 0.f;
 	if (AimTransitionTime <= KINDA_SMALL_NUMBER)
 	{
-		AimBlendAlpha = TargetAlpha;
+		AimBlendAlpha = AimTargetBlendAlpha;
 	}
 	else
 	{
-		AimBlendAlpha = FMath::FInterpConstantTo(AimBlendAlpha, TargetAlpha, DeltaSeconds, 1.f / AimTransitionTime);
+		const float CurrentTime = GetWorld()->GetTimeSeconds();
+		const float ElapsedTime = CurrentTime - AimTransitionStartTime;
+		const float Progress = FMath::Clamp(ElapsedTime / AimTransitionTime, 0.f, 1.f);
+		AimBlendAlpha = FMath::Lerp(AimTransitionStartAlpha, AimTargetBlendAlpha, Progress);
+
+		if (Progress >= 1.f)
+		{
+			AimBlendAlpha = AimTargetBlendAlpha;
+			GetWorldTimerManager().ClearTimer(AimCameraTimerHandle);
+		}
 	}
 
-	CameraBoom->TargetArmLength = FMath::Lerp(DefaultTargetArmLength, AimTargetArmLength, AimBlendAlpha);
-	CameraBoom->SocketOffset = FMath::Lerp(DefaultSocketOffset, AimSocketOffset, AimBlendAlpha);
+	if (CameraBoom)
+	{
+		CameraBoom->TargetArmLength = FMath::Lerp(DefaultTargetArmLength, AimTargetArmLength, AimBlendAlpha);
+		CameraBoom->SocketOffset = FMath::Lerp(DefaultSocketOffset, AimSocketOffset, AimBlendAlpha);
+	}
 
 	if (FollowCamera)
 	{
-		// 根据瞄准混合系数平滑调整 FOV：非瞄准使用默认值，瞄准使用 AimFov
+		// 按同一混合系数同步 FOV，保证视野和越肩机位过渡节奏一致。
 		FollowCamera->SetFieldOfView(FMath::Lerp(DefaultCameraFov, AimFov, AimBlendAlpha));
 	}
 }
@@ -259,6 +274,14 @@ void ABearSurviorCharacter::DoJumpEnd()
 void ABearSurviorCharacter::DoSecondaryUseStart()
 {
 	bIsAiming = true;
+	AimTransitionStartTime = GetWorld()->GetTimeSeconds();
+	AimTransitionStartAlpha = AimBlendAlpha;
+	AimTargetBlendAlpha = 1.f;
+	if (AimTransitionTime <= KINDA_SMALL_NUMBER)
+		GetWorldTimerManager().ClearTimer(AimCameraTimerHandle);
+	else
+		GetWorldTimerManager().SetTimer(AimCameraTimerHandle, this, &ABearSurviorCharacter::UpdateAimCamera, 1.f / 60.f, true);
+	UpdateAimCamera();
 
 	if (CurrentHeldItem == nullptr)
 	{
@@ -281,6 +304,14 @@ void ABearSurviorCharacter::DoSecondaryUseStart()
 void ABearSurviorCharacter::DoSecondaryUseEnd()
 {
 	bIsAiming = false;
+	AimTransitionStartTime = GetWorld()->GetTimeSeconds();
+	AimTransitionStartAlpha = AimBlendAlpha;
+	AimTargetBlendAlpha = 0.f;
+	if (AimTransitionTime <= KINDA_SMALL_NUMBER)
+		GetWorldTimerManager().ClearTimer(AimCameraTimerHandle);
+	else
+		GetWorldTimerManager().SetTimer(AimCameraTimerHandle, this, &ABearSurviorCharacter::UpdateAimCamera, 1.f / 60.f, true);
+	UpdateAimCamera();
 
 	if (CurrentHeldItem == nullptr)
 	{

@@ -106,8 +106,8 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	/** Updates smooth camera blend for aim state */
-	void UpdateAimCamera(float DeltaSeconds);
+	/** 根据当前瞄准状态切换越肩瞄准相机参数 */
+	void UpdateAimCamera();
 
 public:
 
@@ -182,6 +182,18 @@ protected:
 	float DefaultTargetArmLength = 0.f;
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	float DefaultCameraFov = 90.f;
+
+	// 瞄准相机插值的起始时间戳，用于在短时定时器回调里按时长推进过渡。
+	float AimTransitionStartTime = 0.f;
+
+	// 瞄准相机插值开始时的混合系数，用于支持中途打断后重新插值。
+	float AimTransitionStartAlpha = 0.f;
+
+	// 瞄准相机当前过渡到的目标混合系数，用于配合线性瞄准使用：0 表示默认视角，1 表示瞄准视角。
+	float AimTargetBlendAlpha = 0.f;
+
+	// 仅在瞄准进入或退出的短暂时间内运行的定时器句柄，避免占用角色常驻 Tick。
+	FTimerHandle AimCameraTimerHandle;
 
 	float AimBlendAlpha = 0.f;
 	bool bIsAiming = false;
