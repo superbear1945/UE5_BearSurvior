@@ -6,7 +6,11 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Engine/Texture2D.h"
 #include "WeaponDataTypes.generated.h"
+
+class UStaticMesh;
+class UTexture2D;
 
 // 物品品质/稀有度枚举，用于背包分类、UI显示、掉落权重等。
 UENUM(BlueprintType)
@@ -61,7 +65,7 @@ struct BEARSURVIOR_API FItemData : public FTableRowBase
 	TSoftObjectPtr<UStaticMesh> WeaponMesh;
 
 	// 最大耐久度，耐久度上限。
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Durability", meta = (ClampMin = "0.0", UIMin = "0.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float MaxDurability = 100.0f;
 };
 
@@ -116,7 +120,7 @@ struct BEARSURVIOR_API FRangedWeaponData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged|Combat", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float AttackInterval = 0.1f;
 
-	// 每秒射击次数，即射速。例如 600 = 每秒10发。
+	// 每分钟射击次数（RPM, Rounds Per Minute），即射速。例如 600 = 每分钟 600 发 = 每秒 10 发。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float FireRate = 600.0f;
 
@@ -147,4 +151,12 @@ struct BEARSURVIOR_API FRangedWeaponData : public FTableRowBase
 	// 储备弹药总数（背包弹药），-1 表示无限弹药。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged|Ammo")
 	int32 ReserveAmmo = 90;
+
+	// 武器弹匣的世界显示网格，用于在世界中显示弹匣外观（可选）。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged")
+	TSoftObjectPtr<UStaticMesh> MagazineMesh = nullptr;
+
+	// 弹匣的偏移量，默认附着点可能和弹匣位置不完全匹配时使用。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged")
+	FVector MagazineOffset = FVector::ZeroVector;
 };

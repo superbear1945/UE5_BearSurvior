@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "ItemBase.h"
 #include "Logging/LogMacros.h"
+#include "Math/MathFwd.h"
 #include "UObject/ObjectPtr.h"
 #include "BearSurviorCharacter.generated.h"
 
@@ -67,7 +68,7 @@ protected:
 	UInputAction* BackAction;
 
 	// 执行Action，比如开火，近战攻击，使用道具等
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* ExecuteAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component|Health")

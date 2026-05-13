@@ -34,7 +34,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChangedSignature, int32, Cur
  *
  * 工作流程：
  *   1. 外部调用 StartFire() 开始射击（组件自动处理开火节奏与弹药消耗）。
- *   2. 组件按 FireRate 执行射线扫描（LineTrace）检测命中。
+ *   2. 组件按 FireRate（每分钟射击次数）换算射击间隔，并执行射线扫描（LineTrace）检测命中。
  *   3. 弹药耗尽时自动或手动触发 Reload() 进行装弹。
  *   4. 外部调用 StopFire() 停止射击。
  *
@@ -88,7 +88,7 @@ protected:
 	// 基础伤害值，从远程武器 DataTable 读取。
 	float CachedBaseDamage;
 
-	// 每秒射击次数，从远程武器 DataTable 读取。
+	// 每分钟射击次数（RPM, Rounds Per Minute），从远程武器 DataTable 读取。
 	float CachedFireRate;
 
 	// 弹匣容量，从远程武器 DataTable 读取。

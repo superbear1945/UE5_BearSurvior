@@ -1,5 +1,5 @@
 // 近战攻击组件实现文件。
-// 设计期数据由宿主武器的 DataTable 提供，通过 InitializeFromWeaponData 设置。
+// 设计期数据由独立 FMeleeWeaponData 提供，通过 InitializeFromWeaponData 设置。
 
 #include "Component/MeleeAttackComponent.h"
 #include "Component/HealthComponent.h"
@@ -28,7 +28,7 @@ UMeleeAttackComponent::UMeleeAttackComponent()
 }
 
 /**
- * 从近战武器 DataTable 行数据初始化组件配置。
+ * 从独立近战武器 DataTable 行数据初始化组件配置。
  * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
  */
 void UMeleeAttackComponent::InitializeFromWeaponData(const FMeleeWeaponData& Data)

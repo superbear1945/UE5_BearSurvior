@@ -75,7 +75,8 @@ void URangeAttackComponent::StartFire()
 
 	if (bCachedAutomaticFire && CachedFireRate > 0.0f)
 	{
-		const float FireInterval = 1.0f / CachedFireRate;
+		// FireRate 使用每分钟射击次数（RPM）配置，因此这里需要先换算成每发之间的秒数。
+		const float FireInterval = 60.0f / CachedFireRate;
 		GetWorld()->GetTimerManager().SetTimer(
 			FireTimerHandle,
 			this,

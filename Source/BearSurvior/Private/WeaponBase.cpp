@@ -1,5 +1,5 @@
 // 武器基类实现文件。
-// 设计期数据从 DataTable 读取，运行时状态由本类管理。
+// 物品公共数据由 AItemBase 解析，武器专属数据由本类解析并分发给近战/远程攻击组件。
 
 #include "Weapon/WeaponBase.h"
 #include "Component/MeleeAttackComponent.h"
@@ -23,29 +23,27 @@ AWeaponBase::AWeaponBase()
 	LastAttackTime = -1000.0f;
 	CurrentDurability = 0.0f;
 
-	// 缓存指针初始化。
-	CachedItemData = nullptr;
+	// 武器专属数据缓存指针初始化。
 	CachedMeleeData = nullptr;
 	CachedRangedData = nullptr;
 }
 
 /**
  * 在游戏开始时初始化武器状态。
- * 解析 DataTable 行数据，同步物品属性，初始化运行时状态并通知攻击组件。
+ * 先让 AItemBase 解析公共物品数据，再解析武器专属数据并通知攻击组件。
  */
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 
 	ResolveWeaponData();
-	SyncItemProperties();
 	InitializeFromData();
 	InitializeAttackComponents();
 }
 
 /**
- * 解析 WeaponDataRow 指向的 DataTable 行。
- * 根据 WeaponType 区分近战/远程，分别缓存到对应的指针。
+ * 解析 WeaponDataRow 指向的武器专属 DataTable 行。
+ * ItemDataRow 已由 AItemBase 处理，这里只根据 WeaponType 缓存近战或远程数据。
  */
 void AWeaponBase::ResolveWeaponData()
 {
@@ -60,44 +58,18 @@ void AWeaponBase::ResolveWeaponData()
 	if (WeaponType == EWeaponType::Ranged)
 	{
 		CachedRangedData = WeaponDataRow.DataTable->FindRow<FRangedWeaponData>(WeaponDataRow.RowName, Context);
-		CachedItemData = CachedRangedData;
 	}
 	else
 	{
 		CachedMeleeData = WeaponDataRow.DataTable->FindRow<FMeleeWeaponData>(WeaponDataRow.RowName, Context);
-		CachedItemData = CachedMeleeData;
 	}
 
-	if (!CachedItemData)
+	if (!CachedMeleeData && !CachedRangedData)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 DataTable 行失败，表: %s，行: %s"),
 			*GetNameSafe(this),
 			*GetNameSafe(WeaponDataRow.DataTable),
 			*WeaponDataRow.RowName.ToString());
-	}
-}
-
-/**
- * 将 DataTable 中的物品级数据同步到父类 AItemBase 字段。
- * 供背包UI、拾取提示等系统使用。
- */
-void AWeaponBase::SyncItemProperties()
-{
-	if (!CachedItemData)
-		return;
-
-	ItemDisplayName = CachedItemData->DisplayName;
-	ItemDescription = CachedItemData->Description;
-	ItemIcon = CachedItemData->Icon.LoadSynchronous();
-	Weight = CachedItemData->Weight;
-	Rarity = CachedItemData->Rarity;
-
-	// 加载武器网格到 ItemMesh 组件上。
-	if (!CachedItemData->WeaponMesh.IsNull() && ItemMesh)
-	{
-		UStaticMesh* LoadedMesh = CachedItemData->WeaponMesh.LoadSynchronous();
-		if (LoadedMesh)
-			ItemMesh->SetStaticMesh(LoadedMesh);
 	}
 }
 
@@ -143,7 +115,7 @@ bool AWeaponBase::CanAttack() const
 		return false;
 
 	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	const float Interval = CachedItemData ? CachedItemData->AttackInterval : 1.0f;
+	const float Interval = GetAttackInterval();
 	if (CurrentTime - LastAttackTime < Interval)
 		return false;
 
@@ -178,11 +150,11 @@ void AWeaponBase::StopAttack()
 
 /**
  * 消耗武器耐久度。
- * @param Cost 要消耗的耐久值。传入负值时使用 DataTable 中配置的 DurabilityCostPerAttack。
+ * @param Cost 要消耗的耐久值。传入负值时使用当前武器专属 DataTable 中配置的耐久消耗。
  */
 float AWeaponBase::ConsumeDurability(float Cost)
 {
-	const float DefaultCost = CachedItemData ? CachedItemData->DurabilityCostPerAttack : 1.0f;
+	const float DefaultCost = GetDefaultDurabilityCost();
 	const float ActualCost = (Cost >= 0.0f) ? Cost : DefaultCost;
 
 	if (ActualCost <= 0.0f)
@@ -240,11 +212,45 @@ float AWeaponBase::GetMaxDurability() const
 }
 
 /**
- * 返回基础伤害值（从 DataTable 读取）。
+ * 返回基础伤害值（从当前武器专属 DataTable 读取）。
  */
 float AWeaponBase::GetBaseDamage() const
 {
-	return CachedItemData ? CachedItemData->BaseDamage : 0.0f;
+	if (WeaponType == EWeaponType::Ranged && CachedRangedData)
+		return CachedRangedData->BaseDamage;
+
+	if (WeaponType == EWeaponType::Melee && CachedMeleeData)
+		return CachedMeleeData->BaseDamage;
+
+	return 0.0f;
+}
+
+/**
+ * 返回攻击间隔（从当前武器专属 DataTable 读取）。
+ */
+float AWeaponBase::GetAttackInterval() const
+{
+	if (WeaponType == EWeaponType::Ranged && CachedRangedData)
+		return CachedRangedData->AttackInterval;
+
+	if (WeaponType == EWeaponType::Melee && CachedMeleeData)
+		return CachedMeleeData->AttackInterval;
+
+	return 1.0f;
+}
+
+/**
+ * 返回默认耐久消耗（从当前武器专属 DataTable 读取）。
+ */
+float AWeaponBase::GetDefaultDurabilityCost() const
+{
+	if (WeaponType == EWeaponType::Ranged && CachedRangedData)
+		return CachedRangedData->DurabilityCostPerShot;
+
+	if (WeaponType == EWeaponType::Melee && CachedMeleeData)
+		return CachedMeleeData->DurabilityCostPerAttack;
+
+	return 1.0f;
 }
 
 /**
@@ -263,23 +269,24 @@ bool AWeaponBase::IsAttacking() const
 	return bIsAttacking;
 }
 
-// 空物品数据静态实例，用于空指针兜底。
-static const FItemData EmptyItemData;
+// 空武器数据静态实例，用于空指针兜底。
+static const FMeleeWeaponData EmptyMeleeWeaponData;
+static const FRangedWeaponData EmptyRangedWeaponData;
 
 /**
- * 返回缓存的物品公共数据引用。
+ * 返回缓存的近战武器数据引用。
  */
-const FItemData& AWeaponBase::GetItemData() const
+const FMeleeWeaponData& AWeaponBase::GetMeleeWeaponData() const
 {
-	return CachedItemData ? *CachedItemData : EmptyItemData;
+	return CachedMeleeData ? *CachedMeleeData : EmptyMeleeWeaponData;
 }
 
 /**
- * 返回缓存的具体武器数据引用。
+ * 返回缓存的远程武器数据引用。
  */
-const FItemData& AWeaponBase::GetWeaponData() const
+const FRangedWeaponData& AWeaponBase::GetRangedWeaponData() const
 {
-	return CachedItemData ? *CachedItemData : EmptyItemData;
+	return CachedRangedData ? *CachedRangedData : EmptyRangedWeaponData;
 }
 
 /**
@@ -287,7 +294,9 @@ const FItemData& AWeaponBase::GetWeaponData() const
  */
 bool AWeaponBase::IsDataLoaded() const
 {
-	return CachedItemData != nullptr;
+	const bool bItemLoaded = CachedItemData != nullptr;
+	const bool bWeaponLoaded = (WeaponType == EWeaponType::Ranged) ? (CachedRangedData != nullptr) : (CachedMeleeData != nullptr);
+	return bItemLoaded && bWeaponLoaded;
 }
 
 /**

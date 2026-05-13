@@ -1,6 +1,6 @@
 // 近战攻击组件。挂载在武器Actor上，负责近战攻击的命中检测与伤害结算。
 // 使用球形扫描（SphereTrace）检测范围内目标，通过 UE5 标准 ApplyDamage 施加伤害。
-// 设计期数据（伤害、攻击范围等）由武器的 DataTable 提供，通过 InitializeFromWeaponData 初始化。
+// 设计期数据（伤害、攻击范围等）由独立 FMeleeWeaponData 提供，通过 InitializeFromWeaponData 初始化。
 
 #pragma once
 
@@ -58,19 +58,19 @@ protected:
 
 	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 设置） ──────
 
-	// 基础伤害值，从武器 DataTable 读取。
+	// 基础伤害值，从近战武器 DataTable 读取。
 	float CachedBaseDamage;
 
-	// 近战攻击范围（射线最大距离，厘米），从武器 DataTable 读取。
+	// 近战攻击范围（射线最大距离，厘米），从近战武器 DataTable 读取。
 	float CachedAttackRange;
 
-	// 近战扫描球体半径（厘米），从武器 DataTable 读取。
+	// 近战扫描球体半径（厘米），从近战武器 DataTable 读取。
 	float CachedAttackRadius;
 
-	// 每次攻击消耗的耐久值，从武器 DataTable 读取。
+	// 每次攻击消耗的耐久值，从近战武器 DataTable 读取。
 	float CachedDurabilityCostPerAttack;
 
-	// 攻击窗口内是否允许命中多个目标，从武器 DataTable 读取。
+	// 攻击窗口内是否允许命中多个目标，从近战武器 DataTable 读取。
 	bool bCachedCanHitMultipleTargets;
 
 // ────────────────────────────────────────── 事件 ──────────────────────────────────────────
