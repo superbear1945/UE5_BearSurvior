@@ -172,10 +172,10 @@ void ABearSurviorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		// 需要在编辑器内勾选Back Action的bConsumeInput属性，以确保在UI交互时也能触发该输入事件。
 		EnhancedInputComponent->BindAction(BackAction, ETriggerEvent::Started, this, &ABearSurviorCharacter::DoBackAction);
 
-		// Execute Action(示例：开火)
-		EnhancedInputComponent->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ABearSurviorCharacter::DoPrimaryUseStart);
-		EnhancedInputComponent->BindAction(ExecuteAction, ETriggerEvent::Completed, this, &ABearSurviorCharacter::DoPrimaryUseEnd);
-		EnhancedInputComponent->BindAction(ExecuteAction, ETriggerEvent::Canceled, this, &ABearSurviorCharacter::DoPrimaryUseEnd);
+		// Primary Use Action(示例：开火)
+		EnhancedInputComponent->BindAction(PrimaryUseAction, ETriggerEvent::Started, this, &ABearSurviorCharacter::DoPrimaryUseStart);
+		EnhancedInputComponent->BindAction(PrimaryUseAction, ETriggerEvent::Completed, this, &ABearSurviorCharacter::DoPrimaryUseEnd);
+		EnhancedInputComponent->BindAction(PrimaryUseAction, ETriggerEvent::Canceled, this, &ABearSurviorCharacter::DoPrimaryUseEnd);
 	}
 	else
 	{

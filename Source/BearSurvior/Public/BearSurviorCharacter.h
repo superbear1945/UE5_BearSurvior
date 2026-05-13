@@ -69,7 +69,7 @@ protected:
 
 	// 执行Action，比如开火，近战攻击，使用道具等
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* ExecuteAction;
+	UInputAction* PrimaryUseAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component|Health")
 	TObjectPtr<UHealthComponent> HealthComponent;

@@ -1,17 +1,19 @@
 // 远程攻击组件。挂载在武器Actor上，负责远程射击的命中检测、弹药管理与开火控制。
 // 使用射线扫描（LineTrace）实现弹道命中检测，支持弹匣、装弹、自动/半自动射击模式。
-// 设计期数据（伤害、射速、弹匣等）由独立 FRangedWeaponData 提供，通过 InitializeFromWeaponData 初始化。
+// 设计期数据（伤害、射速、弹匣、枪声等）由独立 FRangedWeaponData 提供，通过 InitializeFromWeaponData 初始化。
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/DataTable.h"
 #include "Engine/HitResult.h"
 #include "RangeAttackComponent.generated.h"
 
 struct FRangedWeaponData;
 struct FHitResult;
 class UStaticMeshComponent;
+class USoundBase;
 
 // 开火事件。
 // @param ImpactPoint 命中位置。
@@ -58,6 +60,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
 	TObjectPtr<AActor> AimTarget;
 
+	// 远程武器专属数据表行引用。在编辑器中选中行后，组件可自行解析远程武器配置。
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Range|DataTable", meta = (RequiredAssetDataTags = "RowStructure=/Script/BearSurvior.RangedWeaponData"))
+	FDataTableRowHandle RangedWeaponDataRow;
+
 	// 用于射线检测的碰撞通道。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
 	TEnumAsByte<ECollisionChannel> TraceChannel;
@@ -88,7 +94,10 @@ protected:
 	// 装弹定时器句柄，用于控制装弹时长。
 	FTimerHandle ReloadTimerHandle;
 
-	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 设置） ──────
+	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 或 ResolveWeaponData 设置） ──────
+
+	// 缓存的远程武器数据指针，由 ResolveWeaponData 解析 RangedWeaponDataRow 后设置。
+	const FRangedWeaponData* CachedRangedWeaponData;
 
 	// 基础伤害值，从远程武器 DataTable 读取。
 	float CachedBaseDamage;
@@ -116,6 +125,9 @@ protected:
 
 	// 储备弹药总数，从远程武器 DataTable 读取。-1 表示无限弹药。
 	int32 CachedReserveAmmo;
+
+	// 枪声资源，从远程武器 DataTable 读取，供外部系统查询和播放。
+	TSoftObjectPtr<USoundBase> CachedGunshotSound;
 
 // ────────────────────────────────────────── 事件 ──────────────────────────────────────────
 
@@ -147,6 +159,21 @@ public:
 	 * @param Data DataTable 行中解析出的远程武器数据。
 	 */
 	void InitializeFromWeaponData(const FRangedWeaponData& Data);
+
+	/**
+	 * 解析 RangedWeaponDataRow 指向的远程武器 DataTable 行，并缓存到 CachedRangedWeaponData。
+	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
+	 * 数据无效时保留构造函数中的默认值。
+	 */
+	void ResolveWeaponData();
+
+	/** 返回缓存的远程武器数据引用。数据未加载时返回空默认值。 */
+	UFUNCTION(BlueprintPure, Category = "Range|DataTable")
+	const FRangedWeaponData& GetRangedWeaponData() const;
+
+	/** 返回当前缓存的枪声资源引用。未配置时返回空引用。 */
+	UFUNCTION(BlueprintPure, Category = "Range|Audio")
+	TSoftObjectPtr<USoundBase> GetGunshotSound() const;
 
 	/** 开始射击。按配置的射击模式处理开火节奏。 */
 	UFUNCTION(BlueprintCallable, Category = "Range")

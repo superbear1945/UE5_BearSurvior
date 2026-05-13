@@ -88,3 +88,5 @@ DerivedDataCache/*
 .vscode/tasks.json
 *.code-workspace
 !*_example.code-workspace
+
+worktrees/**

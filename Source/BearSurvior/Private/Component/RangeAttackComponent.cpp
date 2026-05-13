@@ -27,7 +27,11 @@ URangeAttackComponent::URangeAttackComponent()
 	CachedMaxRange = 10000.0f;
 	CachedDurabilityCostPerShot = 0.5f;
 	CachedReserveAmmo = 90;
+	CachedGunshotSound = nullptr;
 	TraceChannel = ECC_Visibility;
+
+	// 数据缓存指针初始化。
+	CachedRangedWeaponData = nullptr;
 
 	// 运行时状态默认值。
 	bIsFiring = false;
@@ -58,9 +62,54 @@ void URangeAttackComponent::InitializeFromWeaponData(const FRangedWeaponData& Da
 	CachedMaxRange = Data.MaxRange;
 	CachedDurabilityCostPerShot = Data.DurabilityCostPerShot;
 	CachedReserveAmmo = Data.ReserveAmmo;
+	CachedGunshotSound = Data.GunshotSound;
 
 	// 初始化弹匣弹药数。
 	CurrentAmmoInMagazine = CachedMagazineCapacity;
+}
+
+/**
+ * 解析 RangedWeaponDataRow 指向的远程武器 DataTable 行，并缓存到 CachedRangedWeaponData。
+ * 数据无效时保留构造函数中的默认值，避免影响未接入 DataTable 的测试武器。
+ */
+void URangeAttackComponent::ResolveWeaponData()
+{
+	if (!RangedWeaponDataRow.DataTable || RangedWeaponDataRow.RowName.IsNone())
+		return;
+
+	static const FString Context(TEXT("RangedWeaponDataResolve"));
+	CachedRangedWeaponData = RangedWeaponDataRow.DataTable->FindRow<FRangedWeaponData>(RangedWeaponDataRow.RowName, Context);
+
+	if (!CachedRangedWeaponData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 RangedWeaponDataRow 失败，表: %s，行: %s"),
+			*GetNameSafe(this),
+			*GetNameSafe(RangedWeaponDataRow.DataTable),
+			*RangedWeaponDataRow.RowName.ToString());
+		return;
+	}
+
+	// 将解析出的数据同步到组件缓存字段。
+	InitializeFromWeaponData(*CachedRangedWeaponData);
+}
+
+// 空远程武器数据静态实例，用于空指针兜底。
+static const FRangedWeaponData EmptyRangedWeaponData;
+
+/**
+ * 返回缓存的远程武器数据引用。
+ */
+const FRangedWeaponData& URangeAttackComponent::GetRangedWeaponData() const
+{
+	return CachedRangedWeaponData ? *CachedRangedWeaponData : EmptyRangedWeaponData;
+}
+
+/**
+ * 返回当前缓存的枪声资源引用。
+ */
+TSoftObjectPtr<USoundBase> URangeAttackComponent::GetGunshotSound() const
+{
+	return CachedGunshotSound;
 }
 
 /**
