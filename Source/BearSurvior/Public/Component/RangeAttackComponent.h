@@ -11,6 +11,7 @@
 
 struct FRangedWeaponData;
 struct FHitResult;
+class UStaticMeshComponent;
 
 // 开火事件。
 // @param ImpactPoint 命中位置。
@@ -76,6 +77,10 @@ protected:
 	// 当前弹匣内弹药数。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|State")
 	int32 CurrentAmmoInMagazine = 0;
+
+	// 当前武器的弹匣网格,用于在世界中显示弹匣外观（可选）。
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|Mesh")
+	TObjectPtr<UStaticMeshComponent> MagazineMeshComponent;
 
 	// 开火定时器句柄，用于控制射速节奏。
 	FTimerHandle FireTimerHandle;
