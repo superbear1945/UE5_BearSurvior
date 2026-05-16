@@ -23,6 +23,9 @@ UMeleeAttackComponent::UMeleeAttackComponent()
 	bCachedCanHitMultipleTargets = false;
 	TraceChannel = ECC_Visibility;
 
+	// 数据缓存指针初始化。
+	CachedMeleeWeaponData = nullptr;
+
 	// 运行时状态默认值。
 	bIsInAttackWindow = false;
 }
@@ -38,6 +41,42 @@ void UMeleeAttackComponent::InitializeFromWeaponData(const FMeleeWeaponData& Dat
 	CachedAttackRadius = Data.AttackRadius;
 	CachedDurabilityCostPerAttack = Data.DurabilityCostPerAttack;
 	bCachedCanHitMultipleTargets = Data.bCanHitMultipleTargets;
+}
+
+/**
+ * 解析 MeleeWeaponDataRow 指向的近战武器 DataTable 行，并缓存到 CachedMeleeWeaponData。
+ * 数据无效时保留构造函数中的默认值，避免影响未接入 DataTable 的测试武器。
+ */
+void UMeleeAttackComponent::ResolveWeaponData()
+{
+	if (!MeleeWeaponDataRow.DataTable || MeleeWeaponDataRow.RowName.IsNone())
+		return;
+
+	static const FString Context(TEXT("MeleeWeaponDataResolve"));
+	CachedMeleeWeaponData = MeleeWeaponDataRow.DataTable->FindRow<FMeleeWeaponData>(MeleeWeaponDataRow.RowName, Context);
+
+	if (!CachedMeleeWeaponData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 MeleeWeaponDataRow 失败，表: %s，行: %s"),
+			*GetNameSafe(this),
+			*GetNameSafe(MeleeWeaponDataRow.DataTable),
+			*MeleeWeaponDataRow.RowName.ToString());
+		return;
+	}
+
+	// 将解析出的数据同步到组件缓存字段。
+	InitializeFromWeaponData(*CachedMeleeWeaponData);
+}
+
+// 空近战武器数据静态实例，用于空指针兜底。
+static const FMeleeWeaponData EmptyMeleeWeaponData;
+
+/**
+ * 返回缓存的近战武器数据引用。
+ */
+const FMeleeWeaponData& UMeleeAttackComponent::GetMeleeWeaponData() const
+{
+	return CachedMeleeWeaponData ? *CachedMeleeWeaponData : EmptyMeleeWeaponData;
 }
 
 /**

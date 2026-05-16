@@ -38,7 +38,6 @@ public:
 // ────────────────────────────────────────── 数据表引用 ──────────────────────────────────────────
 
 public:
-
 	// 武器类型，决定从哪张 DataTable 中解析数据。
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon|DataTable")
 	EWeaponType WeaponType;

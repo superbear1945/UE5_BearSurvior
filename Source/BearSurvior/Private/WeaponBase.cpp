@@ -1,5 +1,5 @@
 // 武器基类实现文件。
-// 物品公共数据由 AItemBase 解析，武器专属数据由本类解析并分发给近战/远程攻击组件。
+// 物品公共数据由 AItemBase 解析，武器专属数据由各攻击组件从自身 DataRow 独立解析。
 
 #include "Weapon/WeaponBase.h"
 #include "Component/MeleeAttackComponent.h"
@@ -55,22 +55,22 @@ void AWeaponBase::ResolveWeaponData()
 
 	static const FString Context(TEXT("WeaponDataResolve"));
 
-	if (WeaponType == EWeaponType::Ranged)
-	{
-		CachedRangedData = WeaponDataRow.DataTable->FindRow<FRangedWeaponData>(WeaponDataRow.RowName, Context);
-	}
-	else
-	{
-		CachedMeleeData = WeaponDataRow.DataTable->FindRow<FMeleeWeaponData>(WeaponDataRow.RowName, Context);
-	}
+	// if (WeaponType == EWeaponType::Ranged)
+	// {
+	// 	CachedRangedData = WeaponDataRow.DataTable->FindRow<FRangedWeaponData>(WeaponDataRow.RowName, Context);
+	// }
+	// else
+	// {
+	// 	CachedMeleeData = WeaponDataRow.DataTable->FindRow<FMeleeWeaponData>(WeaponDataRow.RowName, Context);
+	// }
 
-	if (!CachedMeleeData && !CachedRangedData)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 DataTable 行失败，表: %s，行: %s"),
-			*GetNameSafe(this),
-			*GetNameSafe(WeaponDataRow.DataTable),
-			*WeaponDataRow.RowName.ToString());
-	}
+	// if (!CachedMeleeData && !CachedRangedData)
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("[%s] 解析 DataTable 行失败，表: %s，行: %s"),
+	// 		*GetNameSafe(this),
+	// 		*GetNameSafe(WeaponDataRow.DataTable),
+	// 		*WeaponDataRow.RowName.ToString());
+	// }
 }
 
 /**
@@ -86,20 +86,21 @@ void AWeaponBase::InitializeFromData()
 
 /**
  * 通知挂载的攻击组件使用 DataTable 数据进行初始化。
+ * 组件各自从自身的 DataRow 引用解析数据，不再由 WeaponBase 传递。
  */
 void AWeaponBase::InitializeAttackComponents()
 {
-	if (WeaponType == EWeaponType::Ranged && CachedRangedData)
+	if (WeaponType == EWeaponType::Ranged)
 	{
 		URangeAttackComponent* RangedComp = FindComponentByClass<URangeAttackComponent>();
 		if (RangedComp)
-			RangedComp->InitializeFromWeaponData(*CachedRangedData);
+			RangedComp->ResolveWeaponData();
 	}
-	else if (WeaponType == EWeaponType::Melee && CachedMeleeData)
+	else
 	{
 		UMeleeAttackComponent* MeleeComp = FindComponentByClass<UMeleeAttackComponent>();
 		if (MeleeComp)
-			MeleeComp->InitializeFromWeaponData(*CachedMeleeData);
+			MeleeComp->ResolveWeaponData();
 	}
 }
 
@@ -133,7 +134,7 @@ bool AWeaponBase::StartAttack()
 	bIsAttacking = true;
 	LastAttackTime = GetWorld()->GetTimeSeconds();
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("开始射击")));
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("StartAttack调用")));
 
 	return true;
 }
@@ -145,7 +146,7 @@ void AWeaponBase::StopAttack()
 {
 	bIsAttacking = false;
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("停止射击")));
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("StopAttack调用")));
 }
 
 /**
@@ -313,8 +314,6 @@ void AWeaponBase::HandleDurabilityDepleted()
  */
 void AWeaponBase::PrimaryUseStart_Implementation(const FVector& AimLocation, const FVector& AimDirection)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("开始攻击")));
-
 	StartAttack();
 }
 

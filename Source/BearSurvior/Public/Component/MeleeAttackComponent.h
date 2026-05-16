@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Engine/DataTable.h"
 #include "MeleeAttackComponent.generated.h"
 
 struct FMeleeWeaponData;
@@ -40,6 +41,10 @@ public:
 
 public:
 
+	// 近战武器专属数据表行引用。在编辑器中选中行后，组件可自行解析近战武器配置。
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Melee|DataTable", meta = (RequiredAssetDataTags = "RowStructure=/Script/BearSurvior.MeleeWeaponData"))
+	FDataTableRowHandle MeleeWeaponDataRow;
+
 	// 用于近战射线检测的碰撞通道。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config")
 	TEnumAsByte<ECollisionChannel> TraceChannel;
@@ -56,7 +61,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee|State")
 	TSet<TObjectPtr<AActor>> HitActorsThisSwing;
 
-	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 设置） ──────
+	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 或 ResolveWeaponData 设置） ──────
+
+	// 缓存的近战武器数据指针，由 ResolveWeaponData 解析 MeleeWeaponDataRow 后设置。
+	const FMeleeWeaponData* CachedMeleeWeaponData;
 
 	// 基础伤害值，从近战武器 DataTable 读取。
 	float CachedBaseDamage;
@@ -91,6 +99,17 @@ public:
 	 * @param Data DataTable 行中解析出的近战武器数据。
 	 */
 	void InitializeFromWeaponData(const FMeleeWeaponData& Data);
+
+	/**
+	 * 解析 MeleeWeaponDataRow 指向的近战武器 DataTable 行，并缓存到 CachedMeleeWeaponData。
+	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
+	 * 数据无效时保留构造函数中的默认值。
+	 */
+	void ResolveWeaponData();
+
+	/** 返回缓存的近战武器数据引用。数据未加载时返回空默认值。 */
+	UFUNCTION(BlueprintPure, Category = "Melee|DataTable")
+	const FMeleeWeaponData& GetMeleeWeaponData() const;
 
 	/**
 	 * 开启攻击窗口，允许命中检测。

@@ -11,6 +11,7 @@
 
 class UStaticMesh;
 class UTexture2D;
+class USoundBase;
 
 // 物品品质/稀有度枚举，用于背包分类、UI显示、掉落权重等。
 UENUM(BlueprintType)
@@ -159,4 +160,8 @@ struct BEARSURVIOR_API FRangedWeaponData : public FTableRowBase
 	// 弹匣的偏移量，默认附着点可能和弹匣位置不完全匹配时使用。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged")
 	FVector MagazineOffset = FVector::ZeroVector;
+
+	// 枪声资源，用于远程武器开火时提供对应音效资源引用。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged|Audio")
+	TSoftObjectPtr<USoundBase> GunshotSound;
 };
