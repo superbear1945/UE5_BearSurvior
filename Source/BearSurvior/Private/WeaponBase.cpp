@@ -2,8 +2,7 @@
 // 物品公共数据由 AItemBase 解析，武器专属数据由各攻击组件从自身 DataRow 独立解析。
 
 #include "Weapon/WeaponBase.h"
-#include "Component/MeleeAttackComponent.h"
-#include "Component/RangeAttackComponent.h"
+#include "Component/AttackComponentBase.h"
 #include "Engine/Engine.h"
 #include "Logging/LogMacros.h"
 #include "Engine/World.h"
@@ -26,6 +25,7 @@ AWeaponBase::AWeaponBase()
 	// 武器专属数据缓存指针初始化。
 	CachedMeleeData = nullptr;
 	CachedRangedData = nullptr;
+	ActiveAttackComponent = nullptr;
 }
 
 /**
@@ -90,18 +90,15 @@ void AWeaponBase::InitializeFromData()
  */
 void AWeaponBase::InitializeAttackComponents()
 {
-	if (WeaponType == EWeaponType::Ranged)
+	ActiveAttackComponent = FindComponentByClass<UAttackComponentBase>();
+	if (!ActiveAttackComponent)
 	{
-		URangeAttackComponent* RangedComp = FindComponentByClass<URangeAttackComponent>();
-		if (RangedComp)
-			RangedComp->ResolveWeaponData();
+		UE_LOG(LogTemp, Warning, TEXT("[%s] 未找到 AttackComponentBase 派生攻击组件，武器无法执行攻击"), *GetNameSafe(this));
+		return;
 	}
-	else
-	{
-		UMeleeAttackComponent* MeleeComp = FindComponentByClass<UMeleeAttackComponent>();
-		if (MeleeComp)
-			MeleeComp->ResolveWeaponData();
-	}
+
+	// 攻击组件各自解析自己的 DataRow，WeaponBase 不再关心近战或远程的具体数据结构。
+	ActiveAttackComponent->ResolveWeaponData();
 }
 
 /**
@@ -124,11 +121,23 @@ bool AWeaponBase::CanAttack() const
 }
 
 /**
- * 开始攻击。基类实现检查 CanAttack() 并更新攻击状态标记。
+ * 开始攻击。检查武器公共状态后，将瞄准信息转发给当前攻击组件。
  */
-bool AWeaponBase::StartAttack()
+bool AWeaponBase::StartAttack(const FVector& AimLocation, const FVector& AimDirection)
 {
 	if (!CanAttack())
+		return false;
+
+	if (!ActiveAttackComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] StartAttack 失败：未缓存攻击组件"), *GetNameSafe(this));
+		return false;
+	}
+
+	if (!ActiveAttackComponent->CanAttack())
+		return false;
+
+	if (!ActiveAttackComponent->StartAttack(AimLocation, AimDirection))
 		return false;
 
 	bIsAttacking = true;
@@ -144,6 +153,9 @@ bool AWeaponBase::StartAttack()
  */
 void AWeaponBase::StopAttack()
 {
+	if (ActiveAttackComponent)
+		ActiveAttackComponent->StopAttack();
+
 	bIsAttacking = false;
 
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("StopAttack调用")));
@@ -314,7 +326,7 @@ void AWeaponBase::HandleDurabilityDepleted()
  */
 void AWeaponBase::PrimaryUseStart_Implementation(const FVector& AimLocation, const FVector& AimDirection)
 {
-	StartAttack();
+	StartAttack(AimLocation, AimDirection);
 }
 
 /**

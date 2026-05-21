@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Component/AttackComponentBase.h"
 #include "Engine/DataTable.h"
 #include "MeleeAttackComponent.generated.h"
 
@@ -29,7 +29,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnMeleeHitSignature, AActor*, Hi
  * 建议与动画通知（AnimNotify）配合使用：动画通知控制窗口开闭。
  */
 UCLASS(ClassGroup = (Combat), BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
-class BEARSURVIOR_API UMeleeAttackComponent : public UActorComponent
+class BEARSURVIOR_API UMeleeAttackComponent : public UAttackComponentBase
 {
 	GENERATED_BODY()
 
@@ -105,7 +105,16 @@ public:
 	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
 	 * 数据无效时保留构造函数中的默认值。
 	 */
-	void ResolveWeaponData();
+	virtual void ResolveWeaponData() override;
+
+	/** 开始近战攻击。默认打开攻击窗口并立即执行一次近战检测。 */
+	virtual bool StartAttack(const FVector& AimLocation, const FVector& AimDirection) override;
+
+	/** 结束近战攻击。关闭攻击窗口并清理本次挥击命中记录。 */
+	virtual void StopAttack() override;
+
+	/** 返回近战组件当前是否可以发起攻击。 */
+	virtual bool CanAttack() const override;
 
 	/** 返回缓存的近战武器数据引用。数据未加载时返回空默认值。 */
 	UFUNCTION(BlueprintPure, Category = "Melee|DataTable")

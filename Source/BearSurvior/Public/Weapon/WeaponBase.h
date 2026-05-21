@@ -1,6 +1,6 @@
 // 武器基类。继承自物品基类，提供武器运行时状态（耐久度、攻击间隔）和攻击入口。
-// 武器的近战/远程具体行为由子类附加的 MeleeAttackComponent / RangeAttackComponent 实现。
-// 物品公共数据由 AItemBase 读取，近战/远程武器数据由本类解析后分发给对应攻击组件。
+// 武器的近战/远程具体行为由挂载的 AttackComponentBase 派生组件实现。
+// 物品公共数据由 AItemBase 读取，攻击组件数据由组件自身解析。
 
 #pragma once
 
@@ -10,8 +10,7 @@
 #include "Weapon/WeaponDataTypes.h"
 #include "WeaponBase.generated.h"
 
-class UMeleeAttackComponent;
-class URangeAttackComponent;
+class UAttackComponentBase;
 
 // 武器耐久耗尽事件。
 // @param Weapon 耐久耗尽的武器。
@@ -71,6 +70,10 @@ protected:
 	// 缓存的远程武器数据指针，仅远程类型有效。
 	const FRangedWeaponData* CachedRangedData;
 
+	// 当前武器实际用于执行攻击的组件。WeaponBase 只负责输入转发，不关心具体是近战还是远程。
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Attack", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAttackComponentBase> ActiveAttackComponent;
+
 // ────────────────────────────────────────── 事件 ──────────────────────────────────────────
 
 public:
@@ -91,12 +94,13 @@ public:
 	virtual bool CanAttack() const;
 
 	/**
-	 * 开始攻击。子类应覆盖此函数实现具体的攻击流程（如播放动画、触发组件等）。
-	 * 基类实现会检查 CanAttack() 并更新攻击状态标记。
+	 * 开始攻击。基类会检查武器状态，并把角色传入的瞄准信息转发给当前攻击组件。
+	 * @param AimLocation 角色视角或相机位置，用于远程射线等需要瞄准起点的攻击。
+	 * @param AimDirection 角色视角方向，用于远程射线、投射物或朝向型攻击。
 	 * @return 是否成功发起攻击。
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	virtual bool StartAttack();
+	virtual bool StartAttack(const FVector& AimLocation, const FVector& AimDirection);
 
 	/**
 	 * 停止攻击。重置攻击状态，子类可覆盖实现额外的收尾逻辑。

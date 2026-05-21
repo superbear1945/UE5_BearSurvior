@@ -38,6 +38,9 @@ URangeAttackComponent::URangeAttackComponent()
 	bIsReloading = false;
 	CurrentAmmoInMagazine = 0;
 	AimTarget = nullptr;
+	bHasCachedAimData = false;
+	CachedAimLocation = FVector::ZeroVector;
+	CachedAimDirection = FVector::ForwardVector;
 
 	// 创建弹匣网格组件（可选），并设置默认碰撞配置。
 	if (MagazineMeshComponent == nullptr)
@@ -105,6 +108,45 @@ const FRangedWeaponData& URangeAttackComponent::GetRangedWeaponData() const
 }
 
 /**
+ * 开始远程攻击。
+ * 半自动武器仅在 StartFire() 内射击一次；全自动武器会由 StartFire() 根据射速开启循环定时器。
+ */
+bool URangeAttackComponent::StartAttack(const FVector& AimLocation, const FVector& AimDirection)
+{
+	if (!CanAttack())
+		return false;
+
+	// 缓存角色输入链路传入的瞄准数据，FireOnce 内部的射线检测会优先使用这组数据。
+	bHasCachedAimData = !AimDirection.IsNearlyZero();
+	CachedAimLocation = AimLocation;
+	CachedAimDirection = AimDirection.GetSafeNormal();
+
+	StartFire();
+	return true;
+}
+
+/**
+ * 结束远程攻击。
+ * 松开输入时统一停止射击，确保全自动武器清理开火定时器，半自动武器重置输入按住状态。
+ */
+void URangeAttackComponent::StopAttack()
+{
+	StopFire();
+	bHasCachedAimData = false;
+}
+
+/**
+ * 判断远程组件当前是否可以发起攻击。
+ */
+bool URangeAttackComponent::CanAttack() const
+{
+	if (bIsFiring)
+		return false;
+
+	return CanFire();
+}
+
+/**
  * 返回当前缓存的枪声资源引用。
  */
 TSoftObjectPtr<USoundBase> URangeAttackComponent::GetGunshotSound() const
@@ -117,6 +159,9 @@ TSoftObjectPtr<USoundBase> URangeAttackComponent::GetGunshotSound() const
  */
 void URangeAttackComponent::StartFire()
 {
+	if (bIsFiring)
+		return;
+
 	if (bIsReloading)
 		return;
 
@@ -382,6 +427,14 @@ void URangeAttackComponent::GetTraceOriginAndDirection(FVector& OutStart, FVecto
 			if (!ToTarget.IsNearlyZero())
 				OutDirection = ToTarget;
 		}
+		return;
+	}
+
+	if (bHasCachedAimData)
+	{
+		// 没有 Pawn 持有者时，使用角色输入链路传入的瞄准数据作为备用射击方向。
+		OutStart = CachedAimLocation;
+		OutDirection = CachedAimDirection;
 		return;
 	}
 

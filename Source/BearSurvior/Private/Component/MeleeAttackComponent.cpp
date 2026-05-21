@@ -80,6 +80,37 @@ const FMeleeWeaponData& UMeleeAttackComponent::GetMeleeWeaponData() const
 }
 
 /**
+ * 开始近战攻击。
+ * 当前阶段没有动画通知接入时，先开启攻击窗口并立即执行一次检测，后续可由动画通知拆分窗口与检测时机。
+ */
+bool UMeleeAttackComponent::StartAttack(const FVector& AimLocation, const FVector& AimDirection)
+{
+	if (!CanAttack())
+		return false;
+
+	BeginAttackWindow();
+	ExecuteAttack();
+	return true;
+}
+
+/**
+ * 结束近战攻击。
+ * 松开输入或攻击流程结束时关闭窗口，避免后续检测沿用旧命中记录。
+ */
+void UMeleeAttackComponent::StopAttack()
+{
+	EndAttackWindow();
+}
+
+/**
+ * 判断近战组件当前是否可以发起攻击。
+ */
+bool UMeleeAttackComponent::CanAttack() const
+{
+	return GetOwner() != nullptr;
+}
+
+/**
  * 开启攻击窗口，允许命中检测。
  */
 void UMeleeAttackComponent::BeginAttackWindow()

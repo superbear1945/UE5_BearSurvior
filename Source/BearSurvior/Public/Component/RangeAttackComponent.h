@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Component/AttackComponentBase.h"
 #include "Engine/DataTable.h"
 #include "Engine/HitResult.h"
 #include "RangeAttackComponent.generated.h"
@@ -44,7 +44,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChangedSignature, int32, Cur
  * 支持半自动（点射）和全自动（按住不放连续射击）模式。
  */
 UCLASS(ClassGroup = (Combat), BlueprintType, Blueprintable, meta = (BlueprintSpawnableComponent))
-class BEARSURVIOR_API URangeAttackComponent : public UActorComponent
+class BEARSURVIOR_API URangeAttackComponent : public UAttackComponentBase
 {
 	GENERATED_BODY()
 
@@ -87,6 +87,15 @@ protected:
 	// 当前武器的弹匣网格,用于在世界中显示弹匣外观（可选）。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|Mesh")
 	TObjectPtr<UStaticMeshComponent> MagazineMeshComponent;
+
+	// 是否存在由角色输入链路传入的本次攻击瞄准数据。
+	bool bHasCachedAimData;
+
+	// 本次攻击传入的瞄准起点，通常为角色相机或眼睛位置。
+	FVector CachedAimLocation;
+
+	// 本次攻击传入的瞄准方向，通常为角色相机或眼睛前向量。
+	FVector CachedAimDirection;
 
 	// 开火定时器句柄，用于控制射速节奏。
 	FTimerHandle FireTimerHandle;
@@ -165,7 +174,16 @@ public:
 	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
 	 * 数据无效时保留构造函数中的默认值。
 	 */
-	void ResolveWeaponData();
+	virtual void ResolveWeaponData() override;
+
+	/** 开始远程攻击。全自动武器会持续开火，半自动武器只在本次输入开始时射击一次。 */
+	virtual bool StartAttack(const FVector& AimLocation, const FVector& AimDirection) override;
+
+	/** 结束远程攻击。松开输入时停止全自动开火定时器，并重置射击状态。 */
+	virtual void StopAttack() override;
+
+	/** 返回远程组件当前是否可以发起攻击。 */
+	virtual bool CanAttack() const override;
 
 	/** 返回缓存的远程武器数据引用。数据未加载时返回空默认值。 */
 	UFUNCTION(BlueprintPure, Category = "Range|DataTable")
