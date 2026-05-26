@@ -78,7 +78,6 @@ void AEnemyBase::SwitchEnemyState(EEnemyState NewState)
 		case EEnemyState::Chase:
 			// 切换到追逐状态的逻辑
 			GetCharacterMovement()->MaxWalkSpeed = ChaseSpeed;
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("开始追逐")));
 			break;
 		case EEnemyState::Attack:
 			// 切换到攻击状态的逻辑

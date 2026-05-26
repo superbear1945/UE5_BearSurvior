@@ -88,9 +88,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|Mesh")
 	TObjectPtr<UStaticMeshComponent> MagazineMeshComponent;
 
-	// 是否存在由角色输入链路传入的本次攻击瞄准数据。
-	bool bHasCachedAimData;
-
 	// 本次攻击传入的瞄准起点，通常为角色相机或眼睛位置。
 	FVector CachedAimLocation;
 
@@ -272,15 +269,6 @@ public:
 protected:
 
 	virtual void BeginPlay() override;
-
-	/**
-	 * 获取射击的起始位置和方向。
-	 * 优先通过持有者（角色）的 GetActorEyesViewPoint 获取视角信息：
-	 *   - 玩家角色返回摄像头位置和朝向。
-	 *   - NPC 角色返回眼睛位置和控制器旋转。
-	 * 当 AimTarget 有效时方向指向目标。无持有者时回退到武器位置和朝向。
-	 */
-	void GetTraceOriginAndDirection(FVector& OutStart, FVector& OutDirection) const;
 
 	/** 执行一次射击：消耗弹药、执行射线检测、施加伤害、广播事件。 */
 	void FireOnce();

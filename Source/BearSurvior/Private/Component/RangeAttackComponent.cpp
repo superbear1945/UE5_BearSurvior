@@ -39,9 +39,8 @@ URangeAttackComponent::URangeAttackComponent()
 	bIsReloading = false;
 	CurrentAmmoInMagazine = 0;
 	AimTarget = nullptr;
-	bHasCachedAimData = false;
 	CachedAimLocation = FVector::ZeroVector;
-	CachedAimDirection = FVector::ForwardVector;
+	CachedAimDirection = FVector::ZeroVector;
 
 	// 创建弹匣网格组件（可选），并设置默认碰撞配置。
 	if (MagazineMeshComponent == nullptr)
@@ -136,8 +135,7 @@ bool URangeAttackComponent::StartAttack(const FVector& AimLocation, const FVecto
 	if (!CanAttack())
 		return false;
 
-	// 缓存角色输入链路传入的瞄准数据，FireOnce 内部的射线检测会优先使用这组数据。
-	bHasCachedAimData = !AimDirection.IsNearlyZero();
+	// 缓存角色输入链路传入的瞄准数据，如果传入的数据接近0，则说明无瞄准输入
 	CachedAimLocation = AimLocation;
 	CachedAimDirection = AimDirection.GetSafeNormal();
 
@@ -153,7 +151,7 @@ bool URangeAttackComponent::StartAttack(const FVector& AimLocation, const FVecto
 void URangeAttackComponent::StopAttack()
 {
 	StopFire();
-	bHasCachedAimData = false;
+	CachedAimDirection = FVector::ZeroVector;
 }
 
 /**
@@ -400,15 +398,15 @@ void URangeAttackComponent::FireOnce()
 	}
 
 	ConsumeAmmo();
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("射击一次")));
 
 	FHitResult HitResult = PerformLineTrace();
 
 	FVector ImpactPoint = HitResult.ImpactPoint;
 	if (!HitResult.bBlockingHit)
 	{
-		// 未命中时，计算射程末端位置作为 ImpactPoint。
-		FVector Start, Direction;
-		GetTraceOriginAndDirection(Start, Direction);
+		const FVector Start = CachedAimLocation;
+		const FVector Direction = CachedAimDirection;
 		ImpactPoint = Start + Direction * CachedMaxRange;
 	}
 
@@ -454,55 +452,8 @@ void URangeAttackComponent::ReloadTimerCallback()
 }
 
 /**
- * 获取射击的起始位置和方向。
- * 优先通过持有者（角色）的 GetActorEyesViewPoint 获取视角信息。
- * 当 AimTarget 有效时方向指向目标。无持有者时回退到武器位置和朝向。
- */
-void URangeAttackComponent::GetTraceOriginAndDirection(FVector& OutStart, FVector& OutDirection) const
-{
-	AActor* Owner = GetOwner();
-	if (!Owner)
-		return;
-
-	// 尝试从持有者（角色）获取眼睛位置和朝向。
-	// 玩家角色返回摄像头位置和朝向，NPC 默认返回 Actor位置+眼睛高度+控制器旋转。
-	APawn* WeaponOwner = Owner->GetInstigator();
-
-	UE_LOG(LogTemp, Warning, TEXT("WeaponOwner: %s"), WeaponOwner ? *WeaponOwner->GetName() : TEXT("None"));
-
-	if (WeaponOwner)
-	{
-		FRotator EyeRotation;
-		WeaponOwner->GetActorEyesViewPoint(OutStart, EyeRotation);
-		OutDirection = EyeRotation.Vector();
-
-		// 有瞄准目标时覆盖方向，指向目标位置。
-		if (AimTarget && AimTarget != WeaponOwner)
-		{
-			const FVector ToTarget = (AimTarget->GetActorLocation() - OutStart).GetSafeNormal();
-			if (!ToTarget.IsNearlyZero())
-				OutDirection = ToTarget;
-		}
-		return;
-	}
-
-	if (bHasCachedAimData)
-	{
-		// 没有 Pawn 持有者时，使用角色输入链路传入的瞄准数据作为备用射击方向。
-		OutStart = CachedAimLocation;
-		OutDirection = CachedAimDirection;
-		return;
-	}
-
-	// 回退：使用武器位置和朝向（无持有者场景，如固定炮台）。
-	OutStart = Owner->GetActorLocation();
-	OutDirection = Owner->GetActorForwardVector();
-}
-
-/**
  * 执行射线扫描检测命中目标。
- * 射线起点和方向从持有者视角获取（玩家=摄像头，NPC=眼睛位置），
- * 当 AimTarget 有效时优先朝目标方向发射。
+ * 射线起点和方向优先使用由外部动作/输入链路注入并缓存的瞄准起点和方向。
  */
 FHitResult URangeAttackComponent::PerformLineTrace()
 {
@@ -512,9 +463,10 @@ FHitResult URangeAttackComponent::PerformLineTrace()
 	if (!Owner)
 		return HitResult;
 
-	// 获取射线起点和方向（从持有者眼睛位置）。
-	FVector Start, Direction;
-	GetTraceOriginAndDirection(Start, Direction);
+	// 获取射线起点和方向（优先使用已注入并缓存的瞄准起点和方向，否则使用主人或武器方向兜底）
+	const bool bHasValidAim = !CachedAimDirection.IsNearlyZero();
+	const FVector Start = bHasValidAim ? CachedAimLocation : (GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
+	FVector Direction = bHasValidAim ? CachedAimDirection : (GetOwner() ? GetOwner()->GetActorForwardVector() : FVector::ForwardVector);
 
 	// 应用散布角度。
 	if (CachedSpreadAngle > 0.0f)
