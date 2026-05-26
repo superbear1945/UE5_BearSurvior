@@ -1,5 +1,5 @@
 // 武器基类实现文件。
-// 物品公共数据由 AItemBase 解析，武器专属数据由各攻击组件从自身 DataRow 独立解析。
+// 物品公共数据由 AItemBase 解析，武器专属数据与攻击节奏由各攻击组件从自身 DataRow 独立解析。
 
 #include "Weapon/WeaponBase.h"
 #include "Component/AttackComponentBase.h"
@@ -19,62 +19,26 @@ AWeaponBase::AWeaponBase()
 
 	// 运行时状态初始化。
 	bIsAttacking = false;
-	LastAttackTime = -1000.0f;
 	CurrentDurability = 0.0f;
 
-	// 武器专属数据缓存指针初始化。
-	CachedMeleeData = nullptr;
-	CachedRangedData = nullptr;
+	// 攻击组件缓存指针初始化。
 	ActiveAttackComponent = nullptr;
 }
 
 /**
  * 在游戏开始时初始化武器状态。
- * 先让 AItemBase 解析公共物品数据，再解析武器专属数据并通知攻击组件。
+ * 先让 AItemBase 解析公共物品数据，再初始化 WeaponBase 公共状态并通知攻击组件解析自身数据。
  */
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ResolveWeaponData();
 	InitializeFromData();
 	InitializeAttackComponents();
 }
 
 /**
- * 解析 WeaponDataRow 指向的武器专属 DataTable 行。
- * ItemDataRow 已由 AItemBase 处理，这里只根据 WeaponType 缓存近战或远程数据。
- */
-void AWeaponBase::ResolveWeaponData()
-{
-	if (!WeaponDataRow.DataTable || WeaponDataRow.RowName.IsNone())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[%s] WeaponDataRow 未配置或无效"), *GetNameSafe(this));
-		return;
-	}
-
-	static const FString Context(TEXT("WeaponDataResolve"));
-
-	// if (WeaponType == EWeaponType::Ranged)
-	// {
-	// 	CachedRangedData = WeaponDataRow.DataTable->FindRow<FRangedWeaponData>(WeaponDataRow.RowName, Context);
-	// }
-	// else
-	// {
-	// 	CachedMeleeData = WeaponDataRow.DataTable->FindRow<FMeleeWeaponData>(WeaponDataRow.RowName, Context);
-	// }
-
-	// if (!CachedMeleeData && !CachedRangedData)
-	// {
-	// 	UE_LOG(LogTemp, Error, TEXT("[%s] 解析 DataTable 行失败，表: %s，行: %s"),
-	// 		*GetNameSafe(this),
-	// 		*GetNameSafe(WeaponDataRow.DataTable),
-	// 		*WeaponDataRow.RowName.ToString());
-	// }
-}
-
-/**
- * 使用已解析的 DataTable 数据初始化运行时状态。
+ * 使用物品公共数据初始化运行时状态。
  */
 void AWeaponBase::InitializeFromData()
 {
@@ -103,6 +67,7 @@ void AWeaponBase::InitializeAttackComponents()
 
 /**
  * 判断武器当前是否可以执行攻击。
+ * WeaponBase 只检查公共耐久和输入状态，攻击节奏交给攻击组件自身判断。
  */
 bool AWeaponBase::CanAttack() const
 {
@@ -110,11 +75,6 @@ bool AWeaponBase::CanAttack() const
 		return false;
 
 	if (bIsAttacking)
-		return false;
-
-	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	const float Interval = GetAttackInterval();
-	if (CurrentTime - LastAttackTime < Interval)
 		return false;
 
 	return true;
@@ -137,11 +97,11 @@ bool AWeaponBase::StartAttack(const FVector& AimLocation, const FVector& AimDire
 	if (!ActiveAttackComponent->CanAttack())
 		return false;
 
+	// 转发攻击事件给攻击组件
 	if (!ActiveAttackComponent->StartAttack(AimLocation, AimDirection))
 		return false;
 
 	bIsAttacking = true;
-	LastAttackTime = GetWorld()->GetTimeSeconds();
 
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("StartAttack调用")));
 
@@ -225,45 +185,27 @@ float AWeaponBase::GetMaxDurability() const
 }
 
 /**
- * 返回基础伤害值（从当前武器专属 DataTable 读取）。
+ * 返回基础伤害值（由当前攻击组件提供）。
  */
 float AWeaponBase::GetBaseDamage() const
 {
-	if (WeaponType == EWeaponType::Ranged && CachedRangedData)
-		return CachedRangedData->BaseDamage;
-
-	if (WeaponType == EWeaponType::Melee && CachedMeleeData)
-		return CachedMeleeData->BaseDamage;
-
-	return 0.0f;
+	return ActiveAttackComponent ? ActiveAttackComponent->GetBaseDamage() : 0.0f;
 }
 
 /**
- * 返回攻击间隔（从当前武器专属 DataTable 读取）。
+ * 返回攻击间隔（由当前攻击组件提供）。
  */
 float AWeaponBase::GetAttackInterval() const
 {
-	if (WeaponType == EWeaponType::Ranged && CachedRangedData)
-		return CachedRangedData->AttackInterval;
-
-	if (WeaponType == EWeaponType::Melee && CachedMeleeData)
-		return CachedMeleeData->AttackInterval;
-
-	return 1.0f;
+	return ActiveAttackComponent ? ActiveAttackComponent->GetAttackInterval() : 0.0f;
 }
 
 /**
- * 返回默认耐久消耗（从当前武器专属 DataTable 读取）。
+ * 返回默认耐久消耗（由当前攻击组件提供）。
  */
 float AWeaponBase::GetDefaultDurabilityCost() const
 {
-	if (WeaponType == EWeaponType::Ranged && CachedRangedData)
-		return CachedRangedData->DurabilityCostPerShot;
-
-	if (WeaponType == EWeaponType::Melee && CachedMeleeData)
-		return CachedMeleeData->DurabilityCostPerAttack;
-
-	return 1.0f;
+	return ActiveAttackComponent ? ActiveAttackComponent->GetDefaultDurabilityCost() : 0.0f;
 }
 
 /**
@@ -282,33 +224,13 @@ bool AWeaponBase::IsAttacking() const
 	return bIsAttacking;
 }
 
-// 空武器数据静态实例，用于空指针兜底。
-static const FMeleeWeaponData EmptyMeleeWeaponData;
-static const FRangedWeaponData EmptyRangedWeaponData;
-
 /**
- * 返回缓存的近战武器数据引用。
- */
-const FMeleeWeaponData& AWeaponBase::GetMeleeWeaponData() const
-{
-	return CachedMeleeData ? *CachedMeleeData : EmptyMeleeWeaponData;
-}
-
-/**
- * 返回缓存的远程武器数据引用。
- */
-const FRangedWeaponData& AWeaponBase::GetRangedWeaponData() const
-{
-	return CachedRangedData ? *CachedRangedData : EmptyRangedWeaponData;
-}
-
-/**
- * 判断武器数据是否正确加载。
+ * 判断物品公共数据与攻击组件数据是否正确加载。
  */
 bool AWeaponBase::IsDataLoaded() const
 {
 	const bool bItemLoaded = CachedItemData != nullptr;
-	const bool bWeaponLoaded = (WeaponType == EWeaponType::Ranged) ? (CachedRangedData != nullptr) : (CachedMeleeData != nullptr);
+	const bool bWeaponLoaded = ActiveAttackComponent != nullptr && ActiveAttackComponent->IsDataLoaded();
 	return bItemLoaded && bWeaponLoaded;
 }
 

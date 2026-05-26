@@ -44,8 +44,43 @@ public:
 	virtual bool CanAttack() const;
 
 	/**
+	 * 返回当前攻击组件管理的攻击间隔。
+	 * WeaponBase 只负责转发攻击意图，具体节奏由派生攻击组件根据自身数据决定。
+	 */
+	virtual float GetAttackInterval() const;
+
+	/**
+	 * 返回当前攻击组件管理的基础伤害。
+	 * WeaponBase 通过该接口读取展示或调试所需的统一伤害值。
+	 */
+	virtual float GetBaseDamage() const;
+
+	/**
+	 * 返回当前攻击组件管理的默认耐久消耗。
+	 * 近战与远程组件各自决定一次攻击应消耗多少耐久。
+	 */
+	virtual float GetDefaultDurabilityCost() const;
+
+	/**
+	 * 返回当前攻击组件是否已经正确加载自身数据。
+	 * 由派生类根据各自 DataTable 缓存状态实现。
+	 */
+	virtual bool IsDataLoaded() const;
+
+	/**
 	 * 解析并缓存组件自身的武器数据。
 	 * WeaponBase 在 BeginPlay 时调用，派生类根据自己的 DataRow 完成初始化。
 	 */
 	virtual void ResolveWeaponData();
+
+protected:
+
+	// 上一次成功开始攻击的时间，由攻击组件自身用于控制攻击节奏。
+	float LastAttackTime;
+
+	/**
+	 * 记录一次成功开始攻击的时间戳。
+	 * 派生类在真正接受本次攻击输入后调用，用于后续冷却判断。
+	 */
+	void MarkAttackStarted();
 };

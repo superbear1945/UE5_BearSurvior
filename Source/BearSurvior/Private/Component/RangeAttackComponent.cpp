@@ -19,6 +19,7 @@ URangeAttackComponent::URangeAttackComponent()
 
 	// 配置默认值（防止 DataTable 未加载时引用未初始化数据）。
 	CachedBaseDamage = 20.0f;
+	CachedAttackInterval = 0.1f;
 	CachedFireRate = 600.0f;
 	CachedMagazineCapacity = 30;
 	CachedReloadTime = 2.0f;
@@ -57,6 +58,7 @@ URangeAttackComponent::URangeAttackComponent()
 void URangeAttackComponent::InitializeFromWeaponData(const FRangedWeaponData& Data)
 {
 	CachedBaseDamage = Data.BaseDamage;
+	CachedAttackInterval = Data.AttackInterval;
 	CachedFireRate = Data.FireRate;
 	CachedMagazineCapacity = Data.MagazineCapacity;
 	CachedReloadTime = Data.ReloadTime;
@@ -121,6 +123,7 @@ bool URangeAttackComponent::StartAttack(const FVector& AimLocation, const FVecto
 	CachedAimLocation = AimLocation;
 	CachedAimDirection = AimDirection.GetSafeNormal();
 
+	MarkAttackStarted();
 	StartFire();
 	return true;
 }
@@ -140,10 +143,45 @@ void URangeAttackComponent::StopAttack()
  */
 bool URangeAttackComponent::CanAttack() const
 {
+	if (!Super::CanAttack())
+		return false;
+
 	if (bIsFiring)
 		return false;
 
 	return CanFire();
+}
+
+/**
+ * 返回当前远程组件管理的攻击间隔。
+ */
+float URangeAttackComponent::GetAttackInterval() const
+{
+	return CachedAttackInterval;
+}
+
+/**
+ * 返回当前远程组件管理的基础伤害。
+ */
+float URangeAttackComponent::GetBaseDamage() const
+{
+	return CachedBaseDamage;
+}
+
+/**
+ * 返回当前远程组件管理的默认耐久消耗。
+ */
+float URangeAttackComponent::GetDefaultDurabilityCost() const
+{
+	return CachedDurabilityCostPerShot;
+}
+
+/**
+ * 返回当前远程组件是否已经成功加载 DataTable 数据。
+ */
+bool URangeAttackComponent::IsDataLoaded() const
+{
+	return CachedRangedWeaponData != nullptr;
 }
 
 /**

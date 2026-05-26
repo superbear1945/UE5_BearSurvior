@@ -2,6 +2,7 @@
 // 默认实现保持安全空行为，派生类按自身攻击类型覆盖具体逻辑。
 
 #include "Component/AttackComponentBase.h"
+#include "Engine/World.h"
 
 /**
  * 初始化攻击组件默认属性。
@@ -9,6 +10,7 @@
 UAttackComponentBase::UAttackComponentBase()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	LastAttackTime = -1000.0f;
 }
 
 /**
@@ -34,7 +36,54 @@ void UAttackComponentBase::StopAttack()
  */
 bool UAttackComponentBase::CanAttack() const
 {
+	const float AttackInterval = FMath::Max(0.0f, GetAttackInterval());
+	if (AttackInterval <= 0.0f)
+		return true;
+
+	const UWorld* World = GetWorld();
+	if (!World)
+		return true;
+
+	if (World->GetTimeSeconds() - LastAttackTime < AttackInterval)
+		return false;
+
 	return true;
+}
+
+/**
+ * 返回当前攻击组件管理的攻击间隔。
+ * 抽象基类默认无冷却，派生类按自身数据覆盖。
+ */
+float UAttackComponentBase::GetAttackInterval() const
+{
+	return 0.0f;
+}
+
+/**
+ * 返回当前攻击组件管理的基础伤害。
+ * 抽象基类默认返回 0，派生类按自身数据覆盖。
+ */
+float UAttackComponentBase::GetBaseDamage() const
+{
+	return 0.0f;
+}
+
+/**
+ * 返回当前攻击组件管理的默认耐久消耗。
+ * 抽象基类默认返回 0，派生类按自身数据覆盖。
+ */
+float UAttackComponentBase::GetDefaultDurabilityCost() const
+{
+	return 0.0f;
+}
+
+/**
+ * 返回当前攻击组件是否已经正确加载自身数据。
+ * 抽象基类默认未加载，派生类按自身缓存状态覆盖。
+ */
+bool UAttackComponentBase::IsDataLoaded() const
+{
+	return false;
 }
 
 /**
@@ -43,4 +92,16 @@ bool UAttackComponentBase::CanAttack() const
  */
 void UAttackComponentBase::ResolveWeaponData()
 {
+}
+
+/**
+ * 记录一次成功开始攻击的时间戳。
+ */
+void UAttackComponentBase::MarkAttackStarted()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	LastAttackTime = World->GetTimeSeconds();
 }

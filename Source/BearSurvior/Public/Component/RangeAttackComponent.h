@@ -111,6 +111,9 @@ protected:
 	// 基础伤害值，从远程武器 DataTable 读取。
 	float CachedBaseDamage;
 
+	// 两次攻击输入之间的最短间隔，从远程武器 DataTable 读取。
+	float CachedAttackInterval;
+
 	// 每分钟射击次数（RPM, Rounds Per Minute），从远程武器 DataTable 读取。
 	float CachedFireRate;
 
@@ -184,6 +187,18 @@ public:
 
 	/** 返回远程组件当前是否可以发起攻击。 */
 	virtual bool CanAttack() const override;
+
+	/** 返回当前远程组件管理的攻击间隔。 */
+	virtual float GetAttackInterval() const override;
+
+	/** 返回当前远程组件管理的基础伤害。 */
+	virtual float GetBaseDamage() const override;
+
+	/** 返回当前远程组件管理的默认耐久消耗。 */
+	virtual float GetDefaultDurabilityCost() const override;
+
+	/** 返回当前远程组件是否已经成功加载 DataTable 数据。 */
+	virtual bool IsDataLoaded() const override;
 
 	/** 返回缓存的远程武器数据引用。数据未加载时返回空默认值。 */
 	UFUNCTION(BlueprintPure, Category = "Range|DataTable")

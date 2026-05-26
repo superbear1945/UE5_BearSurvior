@@ -17,6 +17,7 @@ UMeleeAttackComponent::UMeleeAttackComponent()
 
 	// 配置默认值（防止 DataTable 未加载时引用未初始化数据）。
 	CachedBaseDamage = 25.0f;
+	CachedAttackInterval = 1.0f;
 	CachedAttackRange = 200.0f;
 	CachedAttackRadius = 30.0f;
 	CachedDurabilityCostPerAttack = 1.0f;
@@ -37,6 +38,7 @@ UMeleeAttackComponent::UMeleeAttackComponent()
 void UMeleeAttackComponent::InitializeFromWeaponData(const FMeleeWeaponData& Data)
 {
 	CachedBaseDamage = Data.BaseDamage;
+	CachedAttackInterval = Data.AttackInterval;
 	CachedAttackRange = Data.AttackRange;
 	CachedAttackRadius = Data.AttackRadius;
 	CachedDurabilityCostPerAttack = Data.DurabilityCostPerAttack;
@@ -88,6 +90,7 @@ bool UMeleeAttackComponent::StartAttack(const FVector& AimLocation, const FVecto
 	if (!CanAttack())
 		return false;
 
+	MarkAttackStarted();
 	BeginAttackWindow();
 	ExecuteAttack();
 	return true;
@@ -107,7 +110,42 @@ void UMeleeAttackComponent::StopAttack()
  */
 bool UMeleeAttackComponent::CanAttack() const
 {
+	if (!Super::CanAttack())
+		return false;
+
 	return GetOwner() != nullptr;
+}
+
+/**
+ * 返回当前近战组件管理的攻击间隔。
+ */
+float UMeleeAttackComponent::GetAttackInterval() const
+{
+	return CachedAttackInterval;
+}
+
+/**
+ * 返回当前近战组件管理的基础伤害。
+ */
+float UMeleeAttackComponent::GetBaseDamage() const
+{
+	return CachedBaseDamage;
+}
+
+/**
+ * 返回当前近战组件管理的默认耐久消耗。
+ */
+float UMeleeAttackComponent::GetDefaultDurabilityCost() const
+{
+	return CachedDurabilityCostPerAttack;
+}
+
+/**
+ * 返回当前近战组件是否已经成功加载 DataTable 数据。
+ */
+bool UMeleeAttackComponent::IsDataLoaded() const
+{
+	return CachedMeleeWeaponData != nullptr;
 }
 
 /**

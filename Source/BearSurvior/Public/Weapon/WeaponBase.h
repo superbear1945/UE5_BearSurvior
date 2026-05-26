@@ -1,6 +1,6 @@
-// 武器基类。继承自物品基类，提供武器运行时状态（耐久度、攻击间隔）和攻击入口。
-// 武器的近战/远程具体行为由挂载的 AttackComponentBase 派生组件实现。
-// 物品公共数据由 AItemBase 读取，攻击组件数据由组件自身解析。
+// 武器基类。继承自物品基类，提供武器运行时状态与攻击输入转发入口。
+// 武器的近战/远程具体行为、攻击节奏和武器专属数据均由挂载的 AttackComponentBase 派生组件自行管理。
+// 物品公共数据由 AItemBase 读取，WeaponBase 只负责公共耐久状态和攻击意图转发。
 
 #pragma once
 
@@ -37,15 +37,6 @@ public:
 // ────────────────────────────────────────── 数据表引用 ──────────────────────────────────────────
 
 public:
-	// 武器类型，决定从哪张 DataTable 中解析数据。
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon|DataTable")
-	EWeaponType WeaponType;
-
-	// 武器专属数据表行引用。在编辑器中选中行后，BeginPlay 时自动解析并初始化攻击组件。
-	// 近战武器指向 FMeleeWeaponData 表，远程武器指向 FRangedWeaponData 表；物品公共字段请配置父类 ItemDataRow。
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon|DataTable")
-	FDataTableRowHandle WeaponDataRow;
-
 // ────────────────────────────────────────── 运行时状态 ──────────────────────────────────────────
 
 public:
@@ -59,16 +50,6 @@ protected:
 	// 当前是否处于攻击状态（防止重复攻击）。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	bool bIsAttacking;
-
-	// 上次攻击完成的时间，用于攻击间隔判定。
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-	float LastAttackTime;
-
-	// 缓存的近战武器数据指针，仅近战类型有效。
-	const FMeleeWeaponData* CachedMeleeData;
-
-	// 缓存的远程武器数据指针，仅远程类型有效。
-	const FRangedWeaponData* CachedRangedData;
 
 	// 当前武器实际用于执行攻击的组件。WeaponBase 只负责输入转发，不关心具体是近战还是远程。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Attack", meta = (AllowPrivateAccess = "true"))
@@ -88,7 +69,7 @@ public:
 
 	/**
 	 * 判断武器当前是否可以执行攻击。
-	 * 检查项目：耐久度是否大于0、是否处于攻击状态、攻击间隔是否已过。
+	 * WeaponBase 只检查公共状态；具体攻击间隔与武器专属条件由攻击组件负责。
 	 */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	virtual bool CanAttack() const;
@@ -136,15 +117,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon|Durability")
 	float GetMaxDurability() const;
 
-	/** 返回基础伤害值（从 DataTable 读取）。 */
+	/** 返回基础伤害值（由当前攻击组件提供）。 */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	float GetBaseDamage() const;
 
-	/** 返回攻击间隔（从当前武器专属 DataTable 读取）。 */
+	/** 返回攻击间隔（由当前攻击组件提供）。 */
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	float GetAttackInterval() const;
 
-	/** 返回默认耐久消耗（从当前武器专属 DataTable 读取）。 */
+	/** 返回默认耐久消耗（由当前攻击组件提供）。 */
 	UFUNCTION(BlueprintPure, Category = "Weapon|Durability")
 	float GetDefaultDurabilityCost() const;
 
@@ -156,15 +137,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	bool IsAttacking() const;
 
-	/** 返回缓存的近战武器数据引用。当前武器不是近战或数据未加载时返回空默认值。 */
-	UFUNCTION(BlueprintPure, Category = "Weapon|DataTable")
-	const FMeleeWeaponData& GetMeleeWeaponData() const;
-
-	/** 返回缓存的远程武器数据引用。当前武器不是远程或数据未加载时返回空默认值。 */
-	UFUNCTION(BlueprintPure, Category = "Weapon|DataTable")
-	const FRangedWeaponData& GetRangedWeaponData() const;
-
-	/** 判断武器数据是否正确加载。 */
+	/** 判断物品公共数据与攻击组件数据是否都已正确加载。 */
 	UFUNCTION(BlueprintPure, Category = "Weapon|DataTable")
 	bool IsDataLoaded() const;
 
@@ -180,18 +153,12 @@ protected:
 	virtual void BeginPlay() override;
 
 	/**
-	 * 解析 WeaponDataRow 指向的 DataTable 行，缓存到 CachedMeleeData / CachedRangedData 中。
-	 * ItemDataRow 由 AItemBase 独立解析，避免物品数据和攻击数据互相依赖。
-	 */
-	void ResolveWeaponData();
-
-	/**
-	 * 使用已解析的 DataTable 数据初始化运行时状态（耐久度、弹匣等）。
+	 * 使用物品公共数据初始化运行时状态。
 	 */
 	void InitializeFromData();
 
 	/**
-	 * 通知挂载的 AttackComponent 使用 DataTable 数据进行初始化。
+	 * 通知挂载的 AttackComponent 解析并初始化自身武器数据。
 	 */
 	void InitializeAttackComponents();
 

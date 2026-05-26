@@ -69,6 +69,9 @@ protected:
 	// 基础伤害值，从近战武器 DataTable 读取。
 	float CachedBaseDamage;
 
+	// 两次近战攻击之间的最短间隔，从近战武器 DataTable 读取。
+	float CachedAttackInterval;
+
 	// 近战攻击范围（射线最大距离，厘米），从近战武器 DataTable 读取。
 	float CachedAttackRange;
 
@@ -115,6 +118,18 @@ public:
 
 	/** 返回近战组件当前是否可以发起攻击。 */
 	virtual bool CanAttack() const override;
+
+	/** 返回当前近战组件管理的攻击间隔。 */
+	virtual float GetAttackInterval() const override;
+
+	/** 返回当前近战组件管理的基础伤害。 */
+	virtual float GetBaseDamage() const override;
+
+	/** 返回当前近战组件管理的默认耐久消耗。 */
+	virtual float GetDefaultDurabilityCost() const override;
+
+	/** 返回当前近战组件是否已经成功加载 DataTable 数据。 */
+	virtual bool IsDataLoaded() const override;
 
 	/** 返回缓存的近战武器数据引用。数据未加载时返回空默认值。 */
 	UFUNCTION(BlueprintPure, Category = "Melee|DataTable")

@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 #include "MyAIController.h"
+#include "Component/HealthComponent.h"
 #include "Engine.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -21,6 +22,9 @@ AEnemyBase::AEnemyBase()
 	// 创建UI组件，用于显示敌人血条等信息
 	UIWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("UIWidgetComponent"));
 	UIWidgetComponent->SetupAttachment(RootComponent);
+
+	// 创建血条组件
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
 /**

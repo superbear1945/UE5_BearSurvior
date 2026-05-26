@@ -63,7 +63,7 @@ struct BEARSURVIOR_API FItemData : public FTableRowBase
 
 	// 武器世界显示网格，用于在世界中显示武器外观。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	TSoftObjectPtr<UStaticMesh> WeaponMesh;
+	TSoftObjectPtr<UStaticMesh> WeaponMesh = nullptr;
 
 	// 最大耐久度，耐久度上限。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "0.0", UIMin = "0.0"))
