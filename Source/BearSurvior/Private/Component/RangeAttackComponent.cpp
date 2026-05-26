@@ -51,6 +51,14 @@ URangeAttackComponent::URangeAttackComponent()
 	}
 }
 
+void URangeAttackComponent::BeginPlay()
+{
+	// 父类调用了ResolveWeaponData来解析数据
+	Super::BeginPlay();
+
+	// 组件在 BeginPlay 时不直接解析数据，等待宿主 AWeaponBase 调用 InitializeFromWeaponData。
+}
+
 /**
  * 从独立远程武器 DataTable 行数据初始化组件配置。
  * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
@@ -71,6 +79,16 @@ void URangeAttackComponent::InitializeFromWeaponData(const FRangedWeaponData& Da
 
 	// 初始化弹匣弹药数。
 	CurrentAmmoInMagazine = CachedMagazineCapacity;
+
+	// 初始化弹匣mesh
+	if (MagazineMeshComponent && Data.MagazineMesh)
+	{
+		MagazineMeshComponent->SetStaticMesh(Data.MagazineMesh.LoadSynchronous());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] 远程武器数据缺少 MagazineMesh，弹匣外观将不可用"), *GetNameSafe(this));
+	}
 }
 
 /**
@@ -123,7 +141,7 @@ bool URangeAttackComponent::StartAttack(const FVector& AimLocation, const FVecto
 	CachedAimLocation = AimLocation;
 	CachedAimDirection = AimDirection.GetSafeNormal();
 
-	MarkAttackStarted();
+	MarkFirstAttackTime();
 	StartFire();
 	return true;
 }
@@ -209,8 +227,8 @@ void URangeAttackComponent::StartFire()
 		return;
 	}
 
-	bIsFiring = true;
 	FireOnce();
+	bIsFiring = true;
 
 	if (bCachedAutomaticFire && CachedFireRate > 0.0f)
 	{
@@ -540,7 +558,7 @@ float URangeAttackComponent::ApplyHitDamage(const FHitResult& HitResult)
 	UHealthComponent* HealthComp = HitActor->FindComponentByClass<UHealthComponent>();
 	if (HealthComp)
 		return HealthComp->ApplyDamage(CachedBaseDamage, Owner);
-
+	
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("目标 %s 无 HealthComponent，未施加伤害"), *HitActor->GetName()));
 	return 0.0f;
 }

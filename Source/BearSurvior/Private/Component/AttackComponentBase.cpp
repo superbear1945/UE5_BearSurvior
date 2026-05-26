@@ -13,6 +13,12 @@ UAttackComponentBase::UAttackComponentBase()
 	LastAttackTime = -1000.0f;
 }
 
+void UAttackComponentBase::BeginPlay()
+{
+	Super::BeginPlay();
+	ResolveWeaponData();
+}
+
 /**
  * 默认开始攻击实现。
  * 抽象基类不执行具体攻击，仅返回 false 表示未处理。
@@ -37,12 +43,16 @@ void UAttackComponentBase::StopAttack()
 bool UAttackComponentBase::CanAttack() const
 {
 	const float AttackInterval = FMath::Max(0.0f, GetAttackInterval());
+	// 小于0默认为无攻击间隔
 	if (AttackInterval <= 0.0f)
 		return true;
 
 	const UWorld* World = GetWorld();
 	if (!World)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] CanAttack 判断失败：GetWorld失败，无法获取世界对象"), *GetNameSafe(this));	
 		return true;
+	}
 
 	if (World->GetTimeSeconds() - LastAttackTime < AttackInterval)
 		return false;
@@ -95,9 +105,9 @@ void UAttackComponentBase::ResolveWeaponData()
 }
 
 /**
- * 记录一次成功开始攻击的时间戳。
+	 * 标记本轮首次攻击输入成功开始的时间戳。
  */
-void UAttackComponentBase::MarkAttackStarted()
+void UAttackComponentBase::MarkFirstAttackTime()
 {
 	UWorld* World = GetWorld();
 	if (!World)

@@ -271,6 +271,8 @@ public:
 
 protected:
 
+	virtual void BeginPlay() override;
+
 	/**
 	 * 获取射击的起始位置和方向。
 	 * 优先通过持有者（角色）的 GetActorEyesViewPoint 获取视角信息：

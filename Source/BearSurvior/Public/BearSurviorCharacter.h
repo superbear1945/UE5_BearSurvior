@@ -17,7 +17,7 @@ class UInputAction;
 class UMainGameUserSetting;
 class UUserWidget;
 class UHealthComponent;
-class UWidgetComponent;
+// class UWidgetComponent;
 class AItemBase;
 struct FInputActionValue;
 
@@ -74,8 +74,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component|Health")
 	TObjectPtr<UHealthComponent> HealthComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|3DUI")
-	TObjectPtr<UWidgetComponent> WidgetComponent;
+	// 显示3D血量用的Widget组件，附加在角色骨骼上。
+	// 暂时禁用
+	// UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|3DUI")
+	// TObjectPtr<UWidgetComponent> WidgetComponent;
 
 	// 当前角色手中持有的物品
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")

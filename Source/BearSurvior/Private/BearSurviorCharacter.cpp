@@ -16,7 +16,7 @@
 #include "Component/HealthComponent.h"
 #include "InputActionValue.h"
 #include "Blueprint/UserWidget.h"
-#include "Components/WidgetComponent.h"
+// #include "Components/WidgetComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "MainGameUserSetting.h"
 #include "TimerManager.h"
@@ -444,7 +444,7 @@ void ABearSurviorCharacter::InitComponents()
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
 	// 创建 Widget 组件，用于显示角色的 3D UI。
-	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
+	// WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
 }
 
 /**

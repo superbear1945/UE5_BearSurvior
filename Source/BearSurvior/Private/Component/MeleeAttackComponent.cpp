@@ -90,7 +90,7 @@ bool UMeleeAttackComponent::StartAttack(const FVector& AimLocation, const FVecto
 	if (!CanAttack())
 		return false;
 
-	MarkAttackStarted();
+	MarkFirstAttackTime();
 	BeginAttackWindow();
 	ExecuteAttack();
 	return true;

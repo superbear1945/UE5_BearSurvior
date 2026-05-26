@@ -256,8 +256,6 @@ void AWeaponBase::PrimaryUseStart_Implementation(const FVector& AimLocation, con
  */
 void AWeaponBase::PrimaryUseEnd_Implementation()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("停止攻击")));
-
 	StopAttack();
 }
 

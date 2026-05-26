@@ -79,8 +79,10 @@ protected:
 	float LastAttackTime;
 
 	/**
-	 * 记录一次成功开始攻击的时间戳。
+	 * 标记本轮首次攻击输入成功开始的时间戳。
 	 * 派生类在真正接受本次攻击输入后调用，用于后续冷却判断。
 	 */
-	void MarkAttackStarted();
+	void MarkFirstAttackTime();
+
+	virtual void BeginPlay() override;
 };
