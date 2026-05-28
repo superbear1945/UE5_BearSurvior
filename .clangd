@@ -1,4 +1,7 @@
 CompileFlags:
+  # 指示所有启动该文件的 clangd（包括 Neovim）去 .vscode/ 寻找 compile_commands.json
+  CompilationDatabase: ".vscode"
+
   Add: 
     # 1. 补充缺失的 CPU 预取指令集，解决 _m_prefetch 不被识别的问题
     - "-mprfchw"

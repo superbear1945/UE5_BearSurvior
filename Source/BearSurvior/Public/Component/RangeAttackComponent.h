@@ -71,7 +71,6 @@ public:
 // ────────────────────────────────────────── 状态 ──────────────────────────────────────────
 
 protected:
-
 	// 当前是否正在射击（开火按钮是否按住）。
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Range|State")
 	bool bIsFiring = false;

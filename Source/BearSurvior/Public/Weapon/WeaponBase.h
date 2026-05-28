@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "ItemBase.h"
 #include "Weapon/IUseableItem.h"
+#include "EquippableItem.h"
 #include "Weapon/WeaponDataTypes.h"
 #include "WeaponBase.generated.h"
 
@@ -26,7 +27,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAimStateChangedSignature, bool, 
  * 物品公共数据与武器专属数据分别从不同 DataTable 行读取，运行时状态由本类管理。
  */
 UCLASS(Abstract)
-class BEARSURVIOR_API AWeaponBase : public AItemBase, public IUseableItem
+class BEARSURVIOR_API AWeaponBase : public AItemBase, public IUseableItem, public IEquippableItem
 {
 	GENERATED_BODY()
 
