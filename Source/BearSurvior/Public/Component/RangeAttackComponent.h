@@ -160,6 +160,7 @@ protected:
   // ────────────────────────── 事件 ──────────────────────────
 
 public:
+
   // 射击时广播，包含命中位置和被命中的Actor（可能为空）。
   UPROPERTY(BlueprintAssignable, Category = "Range|Event")
   FOnRangeWeaponFireSignature OnFire;

@@ -408,8 +408,14 @@ void URangeAttackComponent::FireOnce()
 	}
 
 	ConsumeAmmo();
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Blue, FString::Printf(TEXT("射击一次")));
 
+	// 播放枪声（如果已加载）。
+	if (LoadedGunshotSound)
+		UGameplayStatics::PlaySoundAtLocation(this, LoadedGunshotSound, GetOwner()->GetActorLocation());
+	else
+		UE_LOG(LogTemp, Warning, TEXT("[%s] 射击时枪声资源未加载，无法播放枪声"), *GetNameSafe(this));
+
+	// 计算命中结果，处理血量变化
 	FHitResult HitResult = PerformLineTrace();
 
 	FVector ImpactPoint = HitResult.ImpactPoint;
@@ -570,7 +576,10 @@ void URangeAttackComponent::OnEquip(ACharacter *CharacterOwner)
 	LoadedGunshotSound = nullptr;
 
 	if (CachedGunshotSound.IsNull())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] 远程武器数据未配置枪声资源"), *GetNameSafe(this));	
 		return;
+	}
 
 	LoadedGunshotSound = CachedGunshotSound.LoadSynchronous();
 	if (!LoadedGunshotSound)
