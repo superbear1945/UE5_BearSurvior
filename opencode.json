@@ -3,7 +3,11 @@
   "mcp": {
     "ue-mcp": {
       "type": "local",
-      "command": ["D:\\Nodejs\\npx.cmd", "ue-mcp", "D:\\epic\\Project\\BearSurvior_UE5\\BearSurvior.uproject"],
+      "command": [
+        "C:\\D\\Nodejs\\npx.cmd",
+        "ue-mcp",
+        "C:\\D\\AboutCreating\\epic\\Project\\BearSurvior_UE5\\BearSurvior.uproject"
+      ],
       "enabled": true,
       "timeout": 120000
     }

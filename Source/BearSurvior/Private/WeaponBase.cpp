@@ -274,3 +274,12 @@ void AWeaponBase::SecondaryUseEnd_Implementation()
 {
 	// 默认没有次要使用结束行为，子类可覆盖实现。
 }
+
+void AWeaponBase::Equip_Implementation(ACharacter* CharacterOwner)
+{
+
+}
+
+void AWeaponBase::UnEquip_Implementation(ACharacter* CharacterOwner)
+{
+}

@@ -7,6 +7,8 @@
 #include "Components/ActorComponent.h"
 #include "AttackComponentBase.generated.h"
 
+class ACharacter;
+
 /**
  * 攻击组件抽象基类：统一所有武器攻击组件的开始攻击、结束攻击和可攻击判断接口。
  * 派生类负责实现具体攻击行为，例如远程射击、近战检测、蓄力攻击等。
@@ -19,6 +21,12 @@ class BEARSURVIOR_API UAttackComponentBase : public UActorComponent
 public:
 	/** 构造函数，初始化组件默认状态。 */
 	UAttackComponentBase();
+
+	UFUNCTION(BlueprintCallable, Category = "Equip")
+	virtual void OnEquip(ACharacter* CharacterOwner);
+
+	UFUNCTION(BlueprintCallable, Category = "Equip")
+	virtual void OnUnEquip(ACharacter* CharacterOwner);
 
 	/**
 	 * 开始攻击。

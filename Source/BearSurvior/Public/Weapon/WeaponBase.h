@@ -68,6 +68,12 @@ public:
 
 public:
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void Equip_Implementation(ACharacter* CharacterOwner) override;
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void UnEquip_Implementation(ACharacter* CharacterOwner) override;
+
 	/**
 	 * 判断武器当前是否可以执行攻击。
 	 * WeaponBase 只检查公共状态；具体攻击间隔与武器专属条件由攻击组件负责。
