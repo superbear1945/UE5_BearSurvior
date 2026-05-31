@@ -4,6 +4,7 @@
 #include "Component/RangeAttackComponent.h"
 #include "Component/HealthComponent.h"
 #include "Weapon/WeaponDataTypes.h"
+#include "GameFramework/Character.h"
 #include "Engine/HitResult.h"
 #include "Engine.h"
 #include "Engine/World.h"
@@ -29,6 +30,7 @@ URangeAttackComponent::URangeAttackComponent()
 	CachedDurabilityCostPerShot = 0.5f;
 	CachedReserveAmmo = 90;
 	CachedGunshotSound = nullptr;
+	LoadedGunshotSound = nullptr;
 	TraceChannel = ECC_Visibility;
 
 	// 数据缓存指针初始化。
@@ -206,6 +208,14 @@ bool URangeAttackComponent::IsDataLoaded() const
 TSoftObjectPtr<USoundBase> URangeAttackComponent::GetGunshotSound() const
 {
 	return CachedGunshotSound;
+}
+
+/**
+ * 返回当前已解析并缓存的枪声资源硬引用。
+ */
+USoundBase* URangeAttackComponent::GetLoadedGunshotSound() const
+{
+	return LoadedGunshotSound;
 }
 
 /**
@@ -548,4 +558,35 @@ void URangeAttackComponent::RefillMagazine()
 	}
 
 	OnAmmoChanged.Broadcast(CurrentAmmoInMagazine, CachedMagazineCapacity);
+}
+
+/**
+ * 武器装备时同步解析枪声软引用，并缓存硬引用供后续播放逻辑直接使用。
+ */
+void URangeAttackComponent::OnEquip(ACharacter *CharacterOwner)
+{
+	Super::OnEquip(CharacterOwner);
+
+	LoadedGunshotSound = nullptr;
+
+	if (CachedGunshotSound.IsNull())
+		return;
+
+	LoadedGunshotSound = CachedGunshotSound.LoadSynchronous();
+	if (!LoadedGunshotSound)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] 枪声资源同步加载失败: %s"),
+			*GetNameSafe(this),
+			*CachedGunshotSound.ToSoftObjectPath().ToString());
+	}
+}
+
+/**
+ * 武器卸下时释放枪声资源的硬引用缓存。
+ */
+void URangeAttackComponent::OnUnEquip(ACharacter *CharacterOwner)
+{
+	Super::OnUnEquip(CharacterOwner);
+
+	LoadedGunshotSound = nullptr;
 }

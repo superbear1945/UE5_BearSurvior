@@ -23,6 +23,23 @@ void UAttackComponentBase::BeginPlay()
  * 默认开始攻击实现。
  * 抽象基类不执行具体攻击，仅返回 false 表示未处理。
  */
+void UAttackComponentBase::OnEquip(ACharacter* CharacterOwner)
+{
+	
+}
+
+/**
+ * 默认卸下装备实现。
+ * 抽象基类不维护额外装备状态，因此保持空行为。
+ */
+void UAttackComponentBase::OnUnEquip(ACharacter* CharacterOwner)
+{
+}
+
+/**
+ * 默认开始攻击实现。
+ * 抽象基类不执行具体攻击，仅返回 false 表示未处理。
+ */
 bool UAttackComponentBase::StartAttack(const FVector& AimLocation, const FVector& AimDirection)
 {
 	return false;

@@ -4,6 +4,7 @@
 #include "Weapon/WeaponBase.h"
 #include "Component/AttackComponentBase.h"
 #include "Engine/Engine.h"
+#include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Engine/World.h"
 
@@ -275,11 +276,39 @@ void AWeaponBase::SecondaryUseEnd_Implementation()
 	// 默认没有次要使用结束行为，子类可覆盖实现。
 }
 
+/**
+ * 装备武器时将事件转发给当前攻击组件。
+ * 远程组件会在这里同步加载枪声等装备期需要保持硬引用的资源。
+ */
 void AWeaponBase::Equip_Implementation(ACharacter* CharacterOwner)
 {
+	if (!ActiveAttackComponent)
+		ActiveAttackComponent = FindComponentByClass<UAttackComponentBase>();
 
+	// 未找到AttackComponentBase派生组件，无法执行攻击逻辑，输出警告日志。
+	if (!ActiveAttackComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Equip 失败：未找到 AttackComponentBase 派生攻击组件"), *GetNameSafe(this));
+		return;
+	}
+
+	ActiveAttackComponent->OnEquip(CharacterOwner);
 }
 
+/**
+ * 卸下武器时将事件转发给当前攻击组件。
+ * 组件可在这里释放装备期间建立的运行时缓存。
+ */
 void AWeaponBase::UnEquip_Implementation(ACharacter* CharacterOwner)
 {
+	if (!ActiveAttackComponent)
+		ActiveAttackComponent = FindComponentByClass<UAttackComponentBase>();
+
+	if (!ActiveAttackComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] UnEquip 失败：未找到 AttackComponentBase 派生攻击组件"), *GetNameSafe(this));
+		return;
+	}
+
+	ActiveAttackComponent->OnUnEquip(CharacterOwner);
 }

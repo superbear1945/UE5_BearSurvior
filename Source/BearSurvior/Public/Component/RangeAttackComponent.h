@@ -15,6 +15,7 @@ struct FRangedWeaponData;
 struct FHitResult;
 class UStaticMeshComponent;
 class USoundBase;
+class ACharacter;
 
 // 开火事件。
 // @param ImpactPoint 命中位置。
@@ -62,11 +63,9 @@ public:
   // ──────────────────────────────────────────
 
 public:
-  UFUNCTION(BluprintCallable, Category = "Range")
-  void OnEquip() override;
-
-  UFUNCTION(BluprintCallable, Category = "Range")
-  void OnUnEquip() override;
+  // 装备与解除装备时调用的函数
+  void OnEquip(ACharacter *CharacterOwner) override;
+  void OnUnEquip(ACharacter *CharacterOwner) override;
 
   // 可选的瞄准目标。设置后优先朝该目标方向射击；为空时沿宿主前向射击。
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
@@ -154,8 +153,11 @@ protected:
   // 枪声资源，从远程武器 DataTable 读取，供外部系统查询和播放。
   TSoftObjectPtr<USoundBase> CachedGunshotSound;
 
-  // ────────────────────────────────────────── 事件
-  // ──────────────────────────────────────────
+  // 装备时解析并缓存的枪声硬引用，避免后续实际播放时再同步加载资源。
+  UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "Range|Audio")
+  TObjectPtr<USoundBase> LoadedGunshotSound = nullptr;
+
+  // ────────────────────────── 事件 ──────────────────────────
 
 public:
   // 射击时广播，包含命中位置和被命中的Actor（可能为空）。
@@ -222,6 +224,10 @@ public:
   /** 返回当前缓存的枪声资源引用。未配置时返回空引用。 */
   UFUNCTION(BlueprintPure, Category = "Range|Audio")
   TSoftObjectPtr<USoundBase> GetGunshotSound() const;
+
+  /** 返回当前已解析并缓存的枪声资源硬引用。未装备或未配置时返回空指针。 */
+  UFUNCTION(BlueprintPure, Category = "Range|Audio")
+  USoundBase *GetLoadedGunshotSound() const;
 
   /** 开始射击。按配置的射击模式处理开火节奏。 */
   UFUNCTION(BlueprintCallable, Category = "Range")
