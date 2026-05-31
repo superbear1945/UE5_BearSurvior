@@ -1,0 +1,21 @@
+# 这是示例文件，用于在多台电脑上同步。需要将后缀的.exp去掉才能正常使用
+CompileFlags:
+  # 指示所有启动该文件的 clangd（包括 Neovim）去 .vscode/ 寻找 compile_commands.json
+  CompilationDatabase: ".vscode"
+
+  Add: 
+    # 1. 补充缺失的 CPU 预取指令集，解决 _m_prefetch 不被识别的问题
+    - "-mprfchw"
+    # 2. 如果你的 CPU 支持较新指令集，也可以直接开启 native 优化让 Clangd 认识更多底层指令
+    - "-march=native"
+    # 3. 核心：强制忽略 builtin 函数相关的冲突和重定义警告/错误
+    - "-Wno-builtins"
+    - "-Wno-incompatible-library-redeclaration"
+    - "-Wno-ignored-attributes"
+
+Diagnostics:
+  Suppress:
+    - builtin_definition
+
+Index:
+  Background: Skip

@@ -66,7 +66,7 @@ public:
   // 装备与解除装备时调用的函数
   void OnEquip(ACharacter *CharacterOwner) override;
   void OnUnEquip(ACharacter *CharacterOwner) override;
-
+  
   // 可选的瞄准目标。设置后优先朝该目标方向射击；为空时沿宿主前向射击。
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
   TObjectPtr<AActor> AimTarget;

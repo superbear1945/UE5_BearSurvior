@@ -90,3 +90,4 @@ DerivedDataCache/*
 !*_example.code-workspace
 
 worktrees/**
+.clangd

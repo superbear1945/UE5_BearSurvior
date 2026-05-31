@@ -415,7 +415,6 @@ void URangeAttackComponent::FireOnce()
 	else
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 射击时枪声资源未加载，无法播放枪声"), *GetNameSafe(this));
 
-	// 计算命中结果，处理血量变化
 	FHitResult HitResult = PerformLineTrace();
 
 	FVector ImpactPoint = HitResult.ImpactPoint;
