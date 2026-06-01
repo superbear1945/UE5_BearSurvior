@@ -417,6 +417,7 @@ void URangeAttackComponent::FireOnce()
 
 	FHitResult HitResult = PerformLineTrace();
 
+	// 处理射线检测后的结果
 	FVector ImpactPoint = HitResult.ImpactPoint;
 	if (!HitResult.bBlockingHit)
 	{
@@ -433,14 +434,19 @@ void URangeAttackComponent::FireOnce()
 		FinalDamage = ApplyHitDamage(HitResult);
 	}
 
+	// 广播射击事件，传递命中点和命中目标（如果有）。
 	OnFire.Broadcast(ImpactPoint, HitActor);
 
+	// 判断是否要换弹
 	if (CurrentAmmoInMagazine <= 0)
 	{
 		StopFire();
 
 		if (CachedReserveAmmo != 0)
+		{
 			Reload();
+			// 其它可能的后续处理（如通知角色切换动画状态）可以在 Reload() 的事件回调中处理。
+		}
 	}
 }
 
@@ -570,8 +576,6 @@ void URangeAttackComponent::RefillMagazine()
  */
 void URangeAttackComponent::OnEquip(ACharacter *CharacterOwner)
 {
-	Super::OnEquip(CharacterOwner);
-
 	LoadedGunshotSound = nullptr;
 
 	if (CachedGunshotSound.IsNull())
@@ -594,7 +598,5 @@ void URangeAttackComponent::OnEquip(ACharacter *CharacterOwner)
  */
 void URangeAttackComponent::OnUnEquip(ACharacter *CharacterOwner)
 {
-	Super::OnUnEquip(CharacterOwner);
-
 	LoadedGunshotSound = nullptr;
 }
