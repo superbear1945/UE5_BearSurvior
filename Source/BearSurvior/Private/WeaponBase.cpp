@@ -3,10 +3,10 @@
 
 #include "Weapon/WeaponBase.h"
 #include "Component/AttackComponentBase.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
-#include "Engine/World.h"
 
 /**
  * 初始化武器默认属性。
@@ -282,6 +282,12 @@ void AWeaponBase::SecondaryUseEnd_Implementation()
  */
 void AWeaponBase::Equip_Implementation(ACharacter* CharacterOwner)
 {
+	if (!CharacterOwner || !CharacterOwner->GetMesh())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Equip 失败：角色或角色网格体无效"), *GetNameSafe(this));
+		return;
+	}
+
 	if (!ActiveAttackComponent)
 		ActiveAttackComponent = FindComponentByClass<UAttackComponentBase>();
 
@@ -292,7 +298,15 @@ void AWeaponBase::Equip_Implementation(ACharacter* CharacterOwner)
 		return;
 	}
 
+	// 转发装备事件给攻击组件
 	ActiveAttackComponent->OnEquip(CharacterOwner);
+
+	// 近战命中由攻击组件执行扫掠检测，装备时关闭武器网格物理模拟，避免附着后受物理影响。
+	if (ItemMesh)
+		ItemMesh->SetSimulatePhysics(false);
+
+	// 将武器贴在角色网格体右手握持插槽HandGrip_R上
+	AttachToComponent(CharacterOwner->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("HandGrip_R"));
 }
 
 /**

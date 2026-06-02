@@ -34,7 +34,7 @@ URangeAttackComponent::URangeAttackComponent()
 	TraceChannel = ECC_Visibility;
 
 	// 数据缓存指针初始化。
-	CachedRangedWeaponData = nullptr;
+	// CachedRangedWeaponData = nullptr;
 
 	// 运行时状态默认值。
 	bIsFiring = false;
@@ -578,6 +578,7 @@ void URangeAttackComponent::OnEquip(ACharacter *CharacterOwner)
 {
 	LoadedGunshotSound = nullptr;
 
+	// 检查是否有枪声文件
 	if (CachedGunshotSound.IsNull())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 远程武器数据未配置枪声资源"), *GetNameSafe(this));	
