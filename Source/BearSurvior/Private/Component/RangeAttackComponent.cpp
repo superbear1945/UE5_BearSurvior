@@ -4,6 +4,8 @@
 #include "Component/RangeAttackComponent.h"
 #include "Component/HealthComponent.h"
 #include "Weapon/WeaponDataTypes.h"
+#include "ItemBase.h"
+#include "Weapon/WeaponBase.h"
 #include "GameFramework/Character.h"
 #include "Engine/HitResult.h"
 #include "Engine.h"
@@ -85,6 +87,11 @@ void URangeAttackComponent::InitializeFromWeaponData(const FRangedWeaponData& Da
 	if (MagazineMeshComponent && Data.MagazineMesh)
 	{
 		MagazineMeshComponent->SetStaticMesh(Data.MagazineMesh.LoadSynchronous());
+
+		// 将弹匣贴到武器自身 ItemMesh 的 Magazine 插槽上。
+		AActor* Owner = GetOwner();
+		if (Owner)
+			MagazineMeshComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("Magazine"));
 	}
 	else
 	{
