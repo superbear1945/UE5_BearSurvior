@@ -165,6 +165,8 @@ public:
 	void ApplyMouseSensitivityFromSettings();
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TObjectPtr<UUserWidget> HUDWidgetInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Camera|Aim")
 	float AimTargetArmLength = 220.f;
