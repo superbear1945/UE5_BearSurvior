@@ -13,6 +13,7 @@
 #include "WeaponBase.generated.h"
 
 class UAttackComponentBase;
+class AWeaponBase;
 
 // 武器耐久耗尽事件。
 // @param Weapon 耐久耗尽的武器。

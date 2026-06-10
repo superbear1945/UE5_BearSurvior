@@ -290,15 +290,16 @@ void AWeaponBase::Equip_Implementation(ACharacter *CharacterOwner, FName AttachS
   // 按传入插槽将武器附着到角色骨骼，SnapToTarget 保证位置和旋转对齐插槽配置。
   AttachToComponent(CharacterMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachSocketName);
 
-  // 确认附着结果：检查实际附着父级和 socket 是否与预期一致。
-  if (GetAttachParent() == CharacterMesh && GetAttachSocketName() == AttachSocketName) 
+  // 确认附着结果：通过根组件检查实际附着父级和 socket 是否与预期一致。
+  USceneComponent* RootComp = GetRootComponent();
+  if (RootComp && RootComp->GetAttachParent() == CharacterMesh && RootComp->GetAttachSocketName() == AttachSocketName) 
   {
     UE_LOG(LogTemp, Log, TEXT("[%s] Equip 成功：已附着到 socket [%s] 上"), *GetNameSafe(this), *AttachSocketName.ToString());
     GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("武器 [%s] 已附着到 Socket [%s]"), *GetNameSafe(this), *AttachSocketName.ToString()));
   } 
   else 
   {
-    UE_LOG(LogTemp, Warning, TEXT("[%s] Equip 警告：附着后检测到异常，附着父级=%s，预期Socket=%s"), *GetNameSafe(this), *GetNameSafe(GetAttachParent()), *AttachSocketName.ToString());
+    UE_LOG(LogTemp, Warning, TEXT("[%s] Equip 警告：附着后检测到异常，附着父级=%s，预期Socket=%s"), *GetNameSafe(this), *GetNameSafe(RootComp ? RootComp->GetAttachParent() : nullptr), *AttachSocketName.ToString());
   }
 }
 

@@ -9,13 +9,5 @@
 
 #include "EquippableItem.h"
 
-/**
- * 装备物品的默认接口实现。
- * 基类接口不假设具体物品形态，因此默认不执行任何附着或状态变更，派生类按需覆盖。
- * @param CharacterOwner 装备此物品的角色指针。
- * @param AttachSocketName 装备时需要附着到角色骨骼上的插槽名称。
- */
-void IEquippableItem::Equip_Implementation(ACharacter *CharacterOwner, FName AttachSocketName)
-{
-	// 默认没有装备行为，具体可装备物品需要在自身类中覆盖实现。
-}
+// BlueprintNativeEvent 的 _Implementation 默认空体由 UE 生成器自动提供，
+// 此处无需重复定义。派生类在各自类中覆盖实现具体装备逻辑。
