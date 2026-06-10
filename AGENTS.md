@@ -32,7 +32,7 @@ Source/BearSurvior/
 
 ## 构建命令
 
-- 本项目没有 `Makefile`、`package.json`、`CMakeLists.txt` 或独立脚本，标准构建方式是 **UnrealBuildTool**。
+- 本项目标准构建方式是 **UnrealBuildTool**。禁止使用原生C++方式，比如CMake等。
 - 优先使用 Unreal 官方批处理脚本，不要自行拼装 MSBuild 命令。
 
 ```bat
@@ -113,28 +113,55 @@ Source/BearSurvior/
 
 ### 格式与布局
 
+- **代码必须使用 Allman 风格大括号布局。** 类型、函数，以及 `if`、`for`、`while` 等控制块的大括号都应另起一行。
 - 使用 UE 常见大括号风格：函数和多数控制块另起一行。
 - 缩进保持现有风格；当前仓库主要使用 `tab`。
 - **函数中优先使用卫语句（早返回），避免多层嵌套。** 先处理异常/边界情况并立即返回，主线逻辑保持在函数顶层，最大嵌套深度建议不超过 3 层。
+
   ```cpp
   // 推荐：卫语句写法
   void Process(Foo* InFoo)
   {
-  	if (!IsValid(InFoo))
-  		return;
-  	if (!InFoo->CanProcess())
-  		return;
-  	// 主线逻辑在此，无需嵌套
-  	DoWork(InFoo);
+   if (!IsValid(InFoo))
+    return;
+   if (!InFoo->CanProcess())
+    return;
+   // 主线逻辑在此，无需嵌套
+   DoWork(InFoo);
   }
   ```
+
 - `if`、`for`、`while` 等控制块内若**只有一行语句**，省略大括号，仅保留缩进。
+
   ```cpp
   if (!Ptr)
-  	return;
+   return;
   for (auto& Item : Items)
-  	Item.Reset();
+   Item.Reset();
   ```
+
+  ```cpp
+  // 推荐：卫语句写法
+  void Process(Foo* InFoo)
+  {
+   if (!IsValid(InFoo))
+    return;
+   if (!InFoo->CanProcess())
+    return;
+   // 主线逻辑在此，无需嵌套
+   DoWork(InFoo);
+  }
+  ```
+
+- `if`、`for`、`while` 等控制块内若**只有一行语句**，省略大括号，仅保留缩进。
+
+  ```cpp
+  if (!Ptr)
+   return;
+  for (auto& Item : Items)
+   Item.Reset();
+  ```
+
 - 修改旧文件时延续局部风格，不要顺手大规模格式化。
 
 ### 命名约定
