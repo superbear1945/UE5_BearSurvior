@@ -16,14 +16,12 @@ class UAttackComponentBase;
 
 // 武器耐久耗尽事件。
 // @param Weapon 耐久耗尽的武器。
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
-    FOnWeaponDurabilityDepletedSignature, AWeaponBase *, Weapon);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponDurabilityDepletedSignature, AWeaponBase *, Weapon);
 
 // 瞄准状态切换事件。比如进入/退出右键瞄准状态
 // @param bIsAiming 当前是否处于瞄准状态。
 // @param TargetFOV 当前瞄准状态下的目标视野范围（FOV）。
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAimStateChangedSignature, bool,
-                                             bIsAiming, float, TargetFOV);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAimStateChangedSignature, bool, bIsAiming, float, TargetFOV);
 
 /**
  * 武器基类：所有武器的公共父类。
@@ -74,8 +72,13 @@ public:
   // ──────────────────────────────────────────
 
 public:
+  /**
+   * 装备武器并附着到角色指定插槽。
+   * @param CharacterOwner 装备该武器的角色。
+   * @param AttachSocketName 武器需要附着到的角色骨骼插槽名称。
+   */
   UFUNCTION(BlueprintCallable, Category = "Weapon")
-  void Equip_Implementation(ACharacter *CharacterOwner) override;
+  void Equip_Implementation(ACharacter *CharacterOwner, FName AttachSocketName) override;
 
   UFUNCTION(BlueprintCallable, Category = "Weapon")
   void UnEquip_Implementation(ACharacter *CharacterOwner) override;
@@ -94,8 +97,7 @@ public:
    * @return 是否成功发起攻击。
    */
   UFUNCTION(BlueprintCallable, Category = "Weapon")
-  virtual bool StartAttack(const FVector &AimLocation,
-                           const FVector &AimDirection);
+  virtual bool StartAttack(const FVector &AimLocation, const FVector &AimDirection);
 
   /**
    * 停止攻击。重置攻击状态，子类可覆盖实现额外的收尾逻辑。
@@ -158,9 +160,7 @@ public:
 
   // IUseableItem
   // 接口实现：武器默认将主要使用映射为攻击生命周期，次要使用留给子类扩展。
-  virtual void
-  PrimaryUseStart_Implementation(const FVector &AimLocation,
-                                 const FVector &AimDirection) override;
+  virtual void PrimaryUseStart_Implementation(const FVector &AimLocation, const FVector &AimDirection) override;
   virtual void PrimaryUseEnd_Implementation() override;
   virtual void SecondaryUseStart_Implementation() override;
   virtual void SecondaryUseEnd_Implementation() override;

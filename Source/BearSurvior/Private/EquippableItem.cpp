@@ -4,10 +4,18 @@
  * @file EquippableItem.cpp
  * @brief 可装备物品接口实现。
  * 
- * 接口本身提供纯虚/虚函数的编译基准，所有的具体实现移交给派生类（如 WeaponBase 等）。
+ * 接口提供 BlueprintNativeEvent 的默认空实现，具体装备逻辑由派生类（如 WeaponBase 等）覆盖。
  */
 
 #include "EquippableItem.h"
 
-// 此处无需要主动实现的虚函数，BlueprintNativeEvent 在 C++ 中的默认行为由 UHT 内部生成，
-// 或者在接口类中仅作静态断言/不实现。
+/**
+ * 装备物品的默认接口实现。
+ * 基类接口不假设具体物品形态，因此默认不执行任何附着或状态变更，派生类按需覆盖。
+ * @param CharacterOwner 装备此物品的角色指针。
+ * @param AttachSocketName 装备时需要附着到角色骨骼上的插槽名称。
+ */
+void IEquippableItem::Equip_Implementation(ACharacter *CharacterOwner, FName AttachSocketName)
+{
+	// 默认没有装备行为，具体可装备物品需要在自身类中覆盖实现。
+}

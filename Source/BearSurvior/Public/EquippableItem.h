@@ -39,11 +39,12 @@ class BEARSURVIOR_API IEquippableItem
 
 public:
 	/**
-	 * @brief 装备物品：将此物品附加到角色骨骼并激活装备效果。
+	 * @brief 装备物品：将此物品附加到角色指定插槽并激活装备效果。
 	 * @param CharacterOwner 装备此物品的角色指针。
+	 * @param AttachSocketName 装备时需要附着到角色骨骼上的插槽名称。
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Equipment")
-	void Equip(ACharacter* CharacterOwner);
+	void Equip(ACharacter* CharacterOwner, FName AttachSocketName);
 
 	/**
 	 * @brief 卸下物品：从角色骨骼分离并停用装备效果。

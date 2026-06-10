@@ -1,0 +1,2 @@
+# 忽略 pi 扩展安装的 Node.js 依赖目录，避免提交本地安装产物。
+extensions/**/node_modules/
