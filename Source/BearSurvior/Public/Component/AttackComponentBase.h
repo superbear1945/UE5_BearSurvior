@@ -71,13 +71,13 @@ public:
 
 	/**
 	 * 返回当前攻击组件是否已经正确加载自身数据。
-	 * 由派生类根据各自 DataTable 缓存状态实现。
+	 * 由派生类根据各自 DataAsset 缓存状态实现。
 	 */
 	virtual bool IsDataLoaded() const;
 
 	/**
 	 * 解析并缓存组件自身的武器数据。
-	 * WeaponBase 在 BeginPlay 时调用，派生类根据自己的 DataRow 完成初始化。
+	 * WeaponBase 在 BeginPlay 时调用，派生类根据自己的 DataAsset 完成初始化。
 	 */
 	virtual void ResolveWeaponData();
 

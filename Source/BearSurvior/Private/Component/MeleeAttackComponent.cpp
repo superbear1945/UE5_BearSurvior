@@ -1,21 +1,21 @@
 // 近战攻击组件实现文件。
-// 设计期数据由独立 FMeleeWeaponData 提供，通过 InitializeFromWeaponData 设置。
+// 设计期数据由 Owner 的 UMeleeWeaponDataAsset 提供，通过 ResolveWeaponData 解析缓存。
 
 #include "Component/MeleeAttackComponent.h"
 #include "Component/HealthComponent.h"
-#include "Weapon/WeaponDataTypes.h"
+#include "Weapon/WeaponBase.h"
 #include "Engine/World.h"
 #include "Engine.h"
 
 /**
  * 初始化组件默认配置。
- * 设计期数值由 InitializeFromWeaponData 在 BeginPlay 时设置。
+ * 设计期数值由 ResolveWeaponData 在 BeginPlay 时自动从 Owner 的 DataAsset 中解析设置。
  */
 UMeleeAttackComponent::UMeleeAttackComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// 配置默认值（防止 DataTable 未加载时引用未初始化数据）。
+	// 配置默认值（防止 DataAsset 未加载时引用未初始化数据）。
 	CachedBaseDamage = 25.0f;
 	CachedAttackInterval = 1.0f;
 	CachedAttackRange = 200.0f;
@@ -24,61 +24,41 @@ UMeleeAttackComponent::UMeleeAttackComponent()
 	bCachedCanHitMultipleTargets = false;
 	TraceChannel = ECC_Visibility;
 
-	// 数据缓存指针初始化。
-	CachedMeleeWeaponData = nullptr;
-
 	// 运行时状态默认值。
 	bIsInAttackWindow = false;
 }
 
 /**
- * 从独立近战武器 DataTable 行数据初始化组件配置。
+ * 从 Owner 的 UMeleeWeaponDataAsset 解析并缓存近战武器数据。
  * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
- */
-void UMeleeAttackComponent::InitializeFromWeaponData(const FMeleeWeaponData& Data)
-{
-	CachedBaseDamage = Data.BaseDamage;
-	CachedAttackInterval = Data.AttackInterval;
-	CachedAttackRange = Data.AttackRange;
-	CachedAttackRadius = Data.AttackRadius;
-	CachedDurabilityCostPerAttack = Data.DurabilityCostPerAttack;
-	bCachedCanHitMultipleTargets = Data.bCanHitMultipleTargets;
-}
-
-/**
- * 解析 MeleeWeaponDataRow 指向的近战武器 DataTable 行，并缓存到 CachedMeleeWeaponData。
- * 数据无效时保留构造函数中的默认值，避免影响未接入 DataTable 的测试武器。
+ * 数据无效时保留构造函数中的默认值，避免影响未接入 DataAsset 的测试武器。
  */
 void UMeleeAttackComponent::ResolveWeaponData()
 {
-	if (!MeleeWeaponDataRow.DataTable || MeleeWeaponDataRow.RowName.IsNone())
-		return;
-
-	static const FString Context(TEXT("MeleeWeaponDataResolve"));
-	CachedMeleeWeaponData = MeleeWeaponDataRow.DataTable->FindRow<FMeleeWeaponData>(MeleeWeaponDataRow.RowName, Context);
-
-	if (!CachedMeleeWeaponData)
+	// 从 Owner 获取 DataAsset
+	AWeaponBase* WeaponOwner = Cast<AWeaponBase>(GetOwner());
+	if (!WeaponOwner)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 MeleeWeaponDataRow 失败，表: %s，行: %s"),
-			*GetNameSafe(this),
-			*GetNameSafe(MeleeWeaponDataRow.DataTable),
-			*MeleeWeaponDataRow.RowName.ToString());
+		UE_LOG(LogTemp, Error, TEXT("[%s] ResolveWeaponData: Owner 不是 AWeaponBase"),
+			*GetNameSafe(this));
 		return;
 	}
 
-	// 将解析出的数据同步到组件缓存字段。
-	InitializeFromWeaponData(*CachedMeleeWeaponData);
-}
+	UMeleeWeaponDataAsset* DataAsset = Cast<UMeleeWeaponDataAsset>(WeaponOwner->GetItemDataAsset());
+	if (!DataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 近战攻击组件需要 UMeleeWeaponDataAsset，"
+			"但当前 ItemDataAsset 类型不匹配"), *GetNameSafe(this));
+		return;
+	}
 
-// 空近战武器数据静态实例，用于空指针兜底。
-static const FMeleeWeaponData EmptyMeleeWeaponData;
-
-/**
- * 返回缓存的近战武器数据引用。
- */
-const FMeleeWeaponData& UMeleeAttackComponent::GetMeleeWeaponData() const
-{
-	return CachedMeleeWeaponData ? *CachedMeleeWeaponData : EmptyMeleeWeaponData;
+	// 从 DataAsset 直接读取字段并缓存到组件本地标量字段。
+	CachedBaseDamage = DataAsset->BaseDamage;
+	CachedAttackInterval = DataAsset->AttackInterval;
+	CachedAttackRange = DataAsset->AttackRange;
+	CachedAttackRadius = DataAsset->AttackRadius;
+	CachedDurabilityCostPerAttack = DataAsset->DurabilityCostPerAttack;
+	bCachedCanHitMultipleTargets = DataAsset->bCanHitMultipleTargets;
 }
 
 /**
@@ -141,11 +121,16 @@ float UMeleeAttackComponent::GetDefaultDurabilityCost() const
 }
 
 /**
- * 返回当前近战组件是否已经成功加载 DataTable 数据。
+ * 返回当前近战组件是否已经成功加载 DataAsset 数据。
  */
 bool UMeleeAttackComponent::IsDataLoaded() const
 {
-	return CachedMeleeWeaponData != nullptr;
+	// 检查 Owner 的 ItemDataAsset 是否为有效的 UMeleeWeaponDataAsset
+	AWeaponBase* WeaponOwner = Cast<AWeaponBase>(GetOwner());
+	if (!WeaponOwner)
+		return false;
+
+	return Cast<UMeleeWeaponDataAsset>(WeaponOwner->GetItemDataAsset()) != nullptr;
 }
 
 /**

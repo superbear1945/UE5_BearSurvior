@@ -1,9 +1,8 @@
 // 远程攻击组件实现文件。
-// 设计期数据由独立 FRangedWeaponData 提供，通过 InitializeFromWeaponData 设置。
+// 设计期数据由 Owner 的 URangedWeaponDataAsset 提供，通过 ResolveWeaponData 解析缓存。
 
 #include "Component/RangeAttackComponent.h"
 #include "Component/HealthComponent.h"
-#include "Weapon/WeaponDataTypes.h"
 #include "ItemBase.h"
 #include "Weapon/WeaponBase.h"
 #include "GameFramework/Character.h"
@@ -14,13 +13,13 @@
 
 /**
  * 初始化组件默认配置。
- * 设计期数值由 InitializeFromWeaponData 在 BeginPlay 时设置。
+ * 设计期数值由 ResolveWeaponData 在 BeginPlay 时自动从 Owner 的 DataAsset 中解析设置。
  */
 URangeAttackComponent::URangeAttackComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// 配置默认值（防止 DataTable 未加载时引用未初始化数据）。
+	// 配置默认值（防止 DataAsset 未加载时引用未初始化数据）。
 	CachedBaseDamage = 20.0f;
 	CachedAttackInterval = 0.1f;
 	CachedFireRate = 600.0f;
@@ -34,9 +33,6 @@ URangeAttackComponent::URangeAttackComponent()
 	CachedGunshotSound = nullptr;
 	LoadedGunshotSound = nullptr;
 	TraceChannel = ECC_Visibility;
-
-	// 数据缓存指针初始化。
-	// CachedRangedWeaponData = nullptr;
 
 	// 运行时状态默认值。
 	bIsFiring = false;
@@ -63,76 +59,57 @@ void URangeAttackComponent::BeginPlay()
 }
 
 /**
- * 从独立远程武器 DataTable 行数据初始化组件配置。
+ * 从独立远程武器 DataAsset 数据初始化组件配置。
  * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
  */
-void URangeAttackComponent::InitializeFromWeaponData(const FRangedWeaponData& Data)
+void URangeAttackComponent::ResolveWeaponData()
 {
-	CachedBaseDamage = Data.BaseDamage;
-	CachedAttackInterval = Data.AttackInterval;
-	CachedFireRate = Data.FireRate;
-	CachedMagazineCapacity = Data.MagazineCapacity;
-	CachedReloadTime = Data.ReloadTime;
-	CachedSpreadAngle = Data.SpreadAngle;
-	bCachedAutomaticFire = Data.bAutomaticFire;
-	CachedMaxRange = Data.MaxRange;
-	CachedDurabilityCostPerShot = Data.DurabilityCostPerShot;
-	CachedReserveAmmo = Data.ReserveAmmo;
-	CachedGunshotSound = Data.GunshotSound;
+	// 从 Owner 获取 DataAsset
+	AWeaponBase* WeaponOwner = Cast<AWeaponBase>(GetOwner());
+	if (!WeaponOwner)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] ResolveWeaponData: Owner 不是 AWeaponBase"),
+			*GetNameSafe(this));
+		return;
+	}
+
+	URangedWeaponDataAsset* DataAsset = Cast<URangedWeaponDataAsset>(WeaponOwner->GetItemDataAsset());
+	if (!DataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] 远程攻击组件需要 URangedWeaponDataAsset，"
+			"但当前 ItemDataAsset 类型不匹配"), *GetNameSafe(this));
+		return;
+	}
+
+	// 从 DataAsset 直接读取字段并缓存到组件本地标量字段。
+	CachedBaseDamage = DataAsset->BaseDamage;
+	CachedAttackInterval = DataAsset->AttackInterval;
+	CachedFireRate = DataAsset->FireRate;
+	CachedMagazineCapacity = DataAsset->MagazineCapacity;
+	CachedReloadTime = DataAsset->ReloadTime;
+	CachedSpreadAngle = DataAsset->SpreadAngle;
+	bCachedAutomaticFire = DataAsset->bAutomaticFire;
+	CachedMaxRange = DataAsset->MaxRange;
+	CachedDurabilityCostPerShot = DataAsset->DurabilityCostPerShot;
+	CachedReserveAmmo = DataAsset->ReserveAmmo;
+	CachedGunshotSound = DataAsset->GunshotSound;
 
 	// 初始化弹匣弹药数。
 	CurrentAmmoInMagazine = CachedMagazineCapacity;
 
-	// 初始化弹匣mesh
-	if (MagazineMeshComponent && Data.MagazineMesh)
+	// 初始化弹匣 mesh
+	if (MagazineMeshComponent && !DataAsset->MagazineMesh.IsNull())
 	{
-		MagazineMeshComponent->SetStaticMesh(Data.MagazineMesh.LoadSynchronous());
+		MagazineMeshComponent->SetStaticMesh(DataAsset->MagazineMesh.LoadSynchronous());
 
 		// 将弹匣贴到武器自身 ItemMesh 的 Magazine 插槽上。
-		AActor* Owner = GetOwner();
-		if (Owner)
-			MagazineMeshComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("Magazine"));
+		if (WeaponOwner)
+			MagazineMeshComponent->AttachToComponent(WeaponOwner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("Magazine"));
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[%s] 远程武器数据缺少 MagazineMesh，弹匣外观将不可用"), *GetNameSafe(this));
 	}
-}
-
-/**
- * 解析 RangedWeaponDataRow 指向的远程武器 DataTable 行，并缓存到 CachedRangedWeaponData。
- * 数据无效时保留构造函数中的默认值，避免影响未接入 DataTable 的测试武器。
- */
-void URangeAttackComponent::ResolveWeaponData()
-{
-	if (!RangedWeaponDataRow.DataTable || RangedWeaponDataRow.RowName.IsNone())
-		return;
-
-	static const FString Context(TEXT("RangedWeaponDataResolve"));
-	CachedRangedWeaponData = RangedWeaponDataRow.DataTable->FindRow<FRangedWeaponData>(RangedWeaponDataRow.RowName, Context);
-
-	if (!CachedRangedWeaponData)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 RangedWeaponDataRow 失败，表: %s，行: %s"),
-			*GetNameSafe(this),
-			*GetNameSafe(RangedWeaponDataRow.DataTable),
-			*RangedWeaponDataRow.RowName.ToString());
-		return;
-	}
-
-	// 将解析出的数据同步到组件缓存字段。
-	InitializeFromWeaponData(*CachedRangedWeaponData);
-}
-
-// 空远程武器数据静态实例，用于空指针兜底。
-static const FRangedWeaponData EmptyRangedWeaponData;
-
-/**
- * 返回缓存的远程武器数据引用。
- */
-const FRangedWeaponData& URangeAttackComponent::GetRangedWeaponData() const
-{
-	return CachedRangedWeaponData ? *CachedRangedWeaponData : EmptyRangedWeaponData;
 }
 
 /**
@@ -202,11 +179,16 @@ float URangeAttackComponent::GetDefaultDurabilityCost() const
 }
 
 /**
- * 返回当前远程组件是否已经成功加载 DataTable 数据。
+ * 返回当前远程组件是否已经成功加载 DataAsset 数据。
  */
 bool URangeAttackComponent::IsDataLoaded() const
 {
-	return CachedRangedWeaponData != nullptr;
+	// 检查 Owner 的 ItemDataAsset 是否为有效的 URangedWeaponDataAsset
+	AWeaponBase* WeaponOwner = Cast<AWeaponBase>(GetOwner());
+	if (!WeaponOwner)
+		return false;
+
+	return Cast<URangedWeaponDataAsset>(WeaponOwner->GetItemDataAsset()) != nullptr;
 }
 
 /**

@@ -115,7 +115,7 @@ bool UAttackComponentBase::IsDataLoaded() const
 
 /**
  * 默认数据解析实现。
- * 抽象基类没有数据行，具体组件应覆盖并解析自身 DataRow。
+ * 抽象基类没有数据资产，具体组件应覆盖并从 Owner 的 ItemDataAsset 中解析。
  */
 void UAttackComponentBase::ResolveWeaponData()
 {

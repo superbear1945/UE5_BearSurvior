@@ -9,7 +9,7 @@
 #include "EquippableItem.h"
 #include "ItemBase.h"
 #include "Weapon/IUseableItem.h"
-#include "Weapon/WeaponDataTypes.h"
+#include "Weapon/ItemEnums.h"
 #include "WeaponBase.generated.h"
 
 class UAttackComponentBase;
@@ -26,7 +26,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAimStateChangedSignature, bool, 
 
 /**
  * 武器基类：所有武器的公共父类。
- * 物品公共数据与武器专属数据分别从不同 DataTable 行读取，运行时状态由本类管理。
+ * 物品公共数据与武器专属数据分别从不同 DataAsset 读取，运行时状态由本类管理。
  */
 UCLASS(Abstract)
 class BEARSURVIOR_API AWeaponBase : public AItemBase,
@@ -38,10 +38,6 @@ public:
   /** 构造函数，初始化武器默认属性。 */
   AWeaponBase();
 
-  // ────────────────────────────────────────── 数据表引用
-  // ──────────────────────────────────────────
-
-public:
   // ────────────────────────────────────────── 运行时状态
   // ──────────────────────────────────────────
 
@@ -108,7 +104,7 @@ public:
 
   /**
    * 消耗武器耐久度。
-   * @param Cost 要消耗的耐久值，默认使用当前武器专属 DataTable
+   * @param Cost 要消耗的耐久值，默认使用当前武器专属 DataAsset
    * 中配置的耐久消耗。
    * @return 实际消耗的耐久值。
    */
@@ -131,7 +127,7 @@ public:
   UFUNCTION(BlueprintPure, Category = "Weapon|Durability")
   float GetCurrentDurability() const;
 
-  /** 返回最大耐久度（从 DataTable 读取）。 */
+  /** 返回最大耐久度（从 DataAsset 读取）。 */
   UFUNCTION(BlueprintPure, Category = "Weapon|Durability")
   float GetMaxDurability() const;
 
@@ -156,7 +152,7 @@ public:
   bool IsAttacking() const;
 
   /** 判断物品公共数据与攻击组件数据是否都已正确加载。 */
-  UFUNCTION(BlueprintPure, Category = "Weapon|DataTable")
+  UFUNCTION(BlueprintPure, Category = "Weapon|DataAsset")
   bool IsDataLoaded() const;
 
   // IUseableItem

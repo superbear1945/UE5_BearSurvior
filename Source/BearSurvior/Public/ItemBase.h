@@ -1,12 +1,13 @@
 // 物品基类。作为项目中所有可拾取/可装备物品的公共父类。
 // 提供物品通用属性（名称、描述、重量、品质等）和基础行为虚函数（拾取、装备、卸下、丢弃）。
-// 物品公共配置由 FItemData 独立保存，武器攻击数据由对应攻击组件自行读取。
+// 物品公共配置由 UItemDataAsset 派生类提供，通过 ItemDataAsset 字段直接引用 DataAsset 资产。
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Weapon/WeaponDataTypes.h"
+#include "Weapon/ItemDataAsset.h"
+#include "Weapon/ItemEnums.h"
 #include "ItemBase.generated.h"
 
 /**
@@ -35,9 +36,10 @@ protected:
 
 public:
 
-	// 物品公共数据表行引用。该数据只负责物品展示、背包字段和世界外观，不包含近战/远程攻击参数。
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|DataTable", meta = (RequiredAssetDataTags = "RowStructure=/Script/BearSurvior.ItemData"))
-	FDataTableRowHandle ItemDataRow;
+	// 物品公共数据资产引用。该数据只负责物品展示、背包字段和世界外观，不包含近战/远程攻击参数。
+	// 在编辑器中直接拖入 UItemDataAsset 资产进行赋值，不再需要通过 DataTable 行引用。
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|DataAsset")
+	TObjectPtr<UItemDataAsset> ItemDataAsset;
 
 	// 物品显示名称，用于背包UI、拾取提示等。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
@@ -69,8 +71,9 @@ public:
 
 protected:
 
-	// 缓存的物品公共数据指针，BeginPlay 中解析 ItemDataRow 后设置，供背包和拾取逻辑读取。
-	const FItemData* CachedItemData;
+	// 物品公共数据资产引用，由 BeginPlay 中的 ResolveItemData 校验非空。
+	// 所有公共字段（DisplayName、Weight、Rarity 等）直接从 ItemDataAsset 读取。
+	// 攻击组件通过 Owner 的 GetItemDataAsset() 获取 DataAsset 并 Cast 为派生类型。
 
 // ────────────────────────────────────────── 行为 ──────────────────────────────────────────
 
@@ -97,7 +100,7 @@ protected:
 	/** 在游戏开始或生成时调用。 */
 	virtual void BeginPlay() override;
 
-	/** 解析 ItemDataRow 指向的公共物品数据。 */
+	/** 解析 ItemDataAsset 指向的公共物品数据。 */
 	virtual void ResolveItemData();
 
 	/** 将公共物品数据同步到 AItemBase 的运行时字段和显示组件。 */
@@ -105,7 +108,7 @@ protected:
 
 public:
 
-	/** 返回缓存的物品公共数据引用。数据未加载时返回空默认值。 */
-	UFUNCTION(BlueprintPure, Category = "Item|DataTable")
-	virtual const FItemData& GetItemData() const;
+	/** 返回物品公共数据资产指针。数据未加载时返回 nullptr。 */
+	UFUNCTION(BlueprintPure, Category = "Item|DataAsset")
+	virtual UItemDataAsset* GetItemDataAsset() const;
 };

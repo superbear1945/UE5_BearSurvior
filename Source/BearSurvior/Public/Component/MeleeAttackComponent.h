@@ -1,15 +1,13 @@
 // 近战攻击组件。挂载在武器Actor上，负责近战攻击的命中检测与伤害结算。
 // 使用球形扫描（SphereTrace）检测范围内目标，通过 UE5 标准 ApplyDamage 施加伤害。
-// 设计期数据（伤害、攻击范围等）由独立 FMeleeWeaponData 提供，通过 InitializeFromWeaponData 初始化。
+// 设计期数据（伤害、攻击范围等）由 Owner 的 UMeleeWeaponDataAsset 提供，通过 ResolveWeaponData 解析缓存。
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Component/AttackComponentBase.h"
-#include "Engine/DataTable.h"
+#include "Weapon/MeleeWeaponDataAsset.h"
 #include "MeleeAttackComponent.generated.h"
-
-struct FMeleeWeaponData;
 
 // 近战命中事件。
 // @param HitActor 被命中的Actor。
@@ -41,9 +39,8 @@ public:
 
 public:
 
-	// 近战武器专属数据表行引用。在编辑器中选中行后，组件可自行解析近战武器配置。
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Melee|DataTable", meta = (RequiredAssetDataTags = "RowStructure=/Script/BearSurvior.MeleeWeaponData"))
-	FDataTableRowHandle MeleeWeaponDataRow;
+	// 近战武器数据资产引用。运行时通过 Owner 的 AWeaponBase::GetItemDataAsset() 获取并 Cast。
+	// 组件自身不直接持有 DataAsset 引用，统一由武器 Actor 管理，保证单点配置。
 
 	// 用于近战射线检测的碰撞通道。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Melee|Config")
@@ -61,27 +58,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Melee|State")
 	TSet<TObjectPtr<AActor>> HitActorsThisSwing;
 
-	// ────── 缓存的设计期数据（由 InitializeFromWeaponData 或 ResolveWeaponData 设置） ──────
+	// ────── 缓存的设计期数据（由 ResolveWeaponData 设置） ──────
 
-	// 缓存的近战武器数据指针，由 ResolveWeaponData 解析 MeleeWeaponDataRow 后设置。
-	const FMeleeWeaponData* CachedMeleeWeaponData;
-
-	// 基础伤害值，从近战武器 DataTable 读取。
+	// 基础伤害值，从近战武器 DataAsset 读取。
 	float CachedBaseDamage;
 
-	// 两次近战攻击之间的最短间隔，从近战武器 DataTable 读取。
+	// 两次近战攻击之间的最短间隔，从近战武器 DataAsset 读取。
 	float CachedAttackInterval;
 
-	// 近战攻击范围（射线最大距离，厘米），从近战武器 DataTable 读取。
+	// 近战攻击范围（射线最大距离，厘米），从近战武器 DataAsset 读取。
 	float CachedAttackRange;
 
-	// 近战扫描球体半径（厘米），从近战武器 DataTable 读取。
+	// 近战扫描球体半径（厘米），从近战武器 DataAsset 读取。
 	float CachedAttackRadius;
 
-	// 每次攻击消耗的耐久值，从近战武器 DataTable 读取。
+	// 每次攻击消耗的耐久值，从近战武器 DataAsset 读取。
 	float CachedDurabilityCostPerAttack;
 
-	// 攻击窗口内是否允许命中多个目标，从近战武器 DataTable 读取。
+	// 攻击窗口内是否允许命中多个目标，从近战武器 DataAsset 读取。
 	bool bCachedCanHitMultipleTargets;
 
 // ────────────────────────────────────────── 事件 ──────────────────────────────────────────
@@ -97,15 +91,9 @@ public:
 public:
 
 	/**
-	 * 从近战武器 DataTable 行数据初始化组件配置。
+	 * 从 Owner 的 UMeleeWeaponDataAsset 解析并缓存近战武器数据。
 	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
-	 * @param Data DataTable 行中解析出的近战武器数据。
-	 */
-	void InitializeFromWeaponData(const FMeleeWeaponData& Data);
-
-	/**
-	 * 解析 MeleeWeaponDataRow 指向的近战武器 DataTable 行，并缓存到 CachedMeleeWeaponData。
-	 * 由宿主 AWeaponBase::InitializeAttackComponents 在 BeginPlay 中调用。
+	 * 从 Owner → AWeaponBase → GetItemDataAsset() → Cast<UMeleeWeaponDataAsset> 获取数据。
 	 * 数据无效时保留构造函数中的默认值。
 	 */
 	virtual void ResolveWeaponData() override;
@@ -128,12 +116,8 @@ public:
 	/** 返回当前近战组件管理的默认耐久消耗。 */
 	virtual float GetDefaultDurabilityCost() const override;
 
-	/** 返回当前近战组件是否已经成功加载 DataTable 数据。 */
+	/** 返回当前近战组件是否已经成功加载 DataAsset 数据。 */
 	virtual bool IsDataLoaded() const override;
-
-	/** 返回缓存的近战武器数据引用。数据未加载时返回空默认值。 */
-	UFUNCTION(BlueprintPure, Category = "Melee|DataTable")
-	const FMeleeWeaponData& GetMeleeWeaponData() const;
 
 	/**
 	 * 开启攻击窗口，允许命中检测。

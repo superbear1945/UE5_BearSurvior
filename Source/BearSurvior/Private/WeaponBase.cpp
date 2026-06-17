@@ -1,6 +1,6 @@
 // 武器基类实现文件。
-// 物品公共数据由 AItemBase 解析，武器专属数据与攻击节奏由各攻击组件从自身
-// DataRow 独立解析。
+// 物品公共数据由 AItemBase 从 UItemDataAsset 解析，武器专属数据与攻击节奏由各攻击组件
+// 从 Owner 的 ItemDataAsset 派生类型独立读取。
 
 #include "Weapon/WeaponBase.h"
 #include "Component/AttackComponentBase.h"
@@ -12,7 +12,7 @@
 
 /**
  * 初始化武器默认属性。
- * 设计期数值由 DataTable 提供，构造函数仅初始化运行时状态标记。
+ * 设计期数值由 DataAsset 提供，构造函数仅初始化运行时状态标记。
  */
 AWeaponBase::AWeaponBase() {
   // 武器默认不可堆叠。
@@ -43,15 +43,15 @@ void AWeaponBase::BeginPlay() {
  * 使用物品公共数据初始化运行时状态。
  */
 void AWeaponBase::InitializeFromData() {
-  if (!CachedItemData)
+  if (!ItemDataAsset)
     return;
 
-  CurrentDurability = CachedItemData->MaxDurability;
+  CurrentDurability = ItemDataAsset->MaxDurability;
 }
 
 /**
- * 通知挂载的攻击组件使用 DataTable 数据进行初始化。
- * 组件各自从自身的 DataRow 引用解析数据，不再由 WeaponBase 传递。
+ * 通知挂载的攻击组件使用 DataAsset 数据进行初始化。
+ * 组件各自从 Owner 的 ItemDataAsset 引用 Cast 并读取数据，不再由 WeaponBase 传递。
  */
 void AWeaponBase::InitializeAttackComponents() {
   ActiveAttackComponent = FindComponentByClass<UAttackComponentBase>();
@@ -60,7 +60,7 @@ void AWeaponBase::InitializeAttackComponents() {
     return;
   }
 
-  // 攻击组件各自解析自己的 DataRow，WeaponBase
+  // 攻击组件各自解析自己的 DataAsset，WeaponBase
   // 不再关心近战或远程的具体数据结构。
   ActiveAttackComponent->ResolveWeaponData();
 }
@@ -119,7 +119,7 @@ void AWeaponBase::StopAttack() {
 
 /**
  * 消耗武器耐久度。
- * @param Cost 要消耗的耐久值。传入负值时使用当前武器专属 DataTable
+ * @param Cost 要消耗的耐久值。传入负值时使用当前武器专属 DataAsset
  * 中配置的耐久消耗。
  */
 float AWeaponBase::ConsumeDurability(float Cost) {
@@ -168,10 +168,10 @@ float AWeaponBase::GetDurabilityPercent() const {
 float AWeaponBase::GetCurrentDurability() const { return CurrentDurability; }
 
 /**
- * 返回最大耐久度（从 DataTable 读取）。
+ * 返回最大耐久度（从 ItemDataAsset 读取）。
  */
 float AWeaponBase::GetMaxDurability() const {
-  return CachedItemData ? CachedItemData->MaxDurability : 0.0f;
+  return ItemDataAsset ? ItemDataAsset->MaxDurability : 0.0f;
 }
 
 /**
@@ -206,10 +206,10 @@ bool AWeaponBase::IsBroken() const { return CurrentDurability <= 0.0f; }
 bool AWeaponBase::IsAttacking() const { return bIsAttacking; }
 
 /**
- * 判断物品公共数据与攻击组件数据是否正确加载。
+ * 判断物品数据资产与攻击组件数据是否正确加载。
  */
 bool AWeaponBase::IsDataLoaded() const {
-  const bool bItemLoaded = CachedItemData != nullptr;
+  const bool bItemLoaded = ItemDataAsset != nullptr;
   const bool bWeaponLoaded = ActiveAttackComponent != nullptr && ActiveAttackComponent->IsDataLoaded();
   return bItemLoaded && bWeaponLoaded;
 }

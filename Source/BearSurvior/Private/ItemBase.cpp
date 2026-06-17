@@ -1,12 +1,9 @@
 // 物品基类实现文件。
-// 负责解析 FItemData 公共物品数据，并将展示、背包和世界外观字段同步到 Actor。
+// 负责从 UItemDataAsset 读取公共物品数据，并将展示、背包和世界外观字段同步到 Actor。
+// 所有字段直接从 DataAsset 读取，不再通过 DataTable 或 Struct 包装。
 
 #include "ItemBase.h"
 #include "Components/StaticMeshComponent.h"
-#include "Engine/DataTable.h"
-
-// 空物品数据静态实例，用于 DataTable 未配置或解析失败时兜底。
-static const FItemData EmptyItemData;
 
 /**
  * 初始化物品默认属性和组件。
@@ -23,7 +20,6 @@ AItemBase::AItemBase()
 	ItemMesh->SetSimulatePhysics(true);
 
 	// 初始化默认物品数据。
-	CachedItemData = nullptr;
 	ItemDisplayName = FText::FromString(TEXT("未命名物品"));
 	ItemDescription = FText::GetEmpty();
 	ItemIcon = nullptr;
@@ -45,56 +41,51 @@ void AItemBase::BeginPlay()
 }
 
 /**
- * 解析 ItemDataRow 指向的公共物品数据。
- * 数据无效时保留构造函数中的默认值，避免影响未接入 DataTable 的测试物品。
+ * 解析 ItemDataAsset 指向的公共物品数据。
+ * 直接从 DataAsset 实例读取字段，不再需要查表或 Struct 包装。
+ * 数据无效时保留构造函数中的默认值，避免影响未接入 DataAsset 的测试物品。
  */
 void AItemBase::ResolveItemData()
 {
-	if (!ItemDataRow.DataTable || ItemDataRow.RowName.IsNone())
-		return;
-
-	static const FString Context(TEXT("ItemDataResolve"));
-	CachedItemData = ItemDataRow.DataTable->FindRow<FItemData>(ItemDataRow.RowName, Context);
-
-	if (!CachedItemData)
+	if (!ItemDataAsset)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[%s] 解析 ItemDataRow 失败，表: %s，行: %s"),
-			*GetNameSafe(this),
-			*GetNameSafe(ItemDataRow.DataTable),
-			*ItemDataRow.RowName.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("[%s] ResolveItemData: ItemDataAsset 为空，使用默认值"),
+			*GetNameSafe(this));
 	}
 }
 
 /**
  * 将公共物品数据同步到运行时字段。
  * 这些字段供背包 UI、拾取提示和世界物品网格直接读取。
+ * 所有字段直接从 ItemDataAsset 读取，不使用缓存的 Struct 指针。
  */
 void AItemBase::SyncItemProperties()
 {
-	if (!CachedItemData)
+	if (!ItemDataAsset)
 		return;
 
-	ItemDisplayName = CachedItemData->DisplayName;
-	ItemDescription = CachedItemData->Description;
-	ItemIcon = CachedItemData->Icon.LoadSynchronous();
-	Weight = CachedItemData->Weight;
-	Rarity = CachedItemData->Rarity;
+	ItemDisplayName = ItemDataAsset->DisplayName;
+	ItemDescription = ItemDataAsset->Description;
+	ItemIcon = ItemDataAsset->Icon.LoadSynchronous();
+	Weight = ItemDataAsset->Weight;
+	Rarity = ItemDataAsset->Rarity;
 
 	// 加载物品网格到 ItemMesh 组件上。
-	if (!CachedItemData->WeaponMesh.IsNull() && ItemMesh)
+	if (!ItemDataAsset->WeaponMesh.IsNull() && ItemMesh)
 	{
-		UStaticMesh* LoadedMesh = CachedItemData->WeaponMesh.LoadSynchronous();
+		UStaticMesh* LoadedMesh = ItemDataAsset->WeaponMesh.LoadSynchronous();
 		if (LoadedMesh)
 			ItemMesh->SetStaticMesh(LoadedMesh);
 	}
 }
 
 /**
- * 返回缓存的物品公共数据引用。
+ * 返回物品公共数据资产指针。
+ * 攻击组件通过此接口获取 DataAsset 并 Cast 为派生类型以读取专属字段。
  */
-const FItemData& AItemBase::GetItemData() const
+UItemDataAsset* AItemBase::GetItemDataAsset() const
 {
-	return CachedItemData ? *CachedItemData : EmptyItemData;
+	return ItemDataAsset;
 }
 
 /**
