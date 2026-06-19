@@ -50,4 +50,10 @@ public:
 	// 最大耐久度，耐久度上限。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float MaxDurability = 100.0f;
+
+	// 握持插槽名称。角色左手 IK 目标将跟随此插槽的世界变换。
+	// 在武器网格体上创建此名称的插槽，控制绑定会驱动左手骨骼匹配该位置。
+	// 例如 "GripSocket"、"WeaponGrip" 等。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|IK")
+	FName GripSocketName = TEXT("GripSocket");
 };

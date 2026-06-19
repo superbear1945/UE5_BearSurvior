@@ -220,6 +220,23 @@ protected:
 
 public:
 
+	/**
+	 * 更新武器 IK 目标。在 Tick 中计算当前持有武器的握持插槽世界变换。
+	 * 结果缓存在 CachedWeaponGripTransform，供动画蓝图或 Control Rig 使用。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Weapon|IK")
+	virtual void UpdateWeaponIK();
+
+	/** 返回当前持有武器的握持插槽世界变换。未持有武器或无插槽时返回 Identity。 */
+	UFUNCTION(BlueprintPure, Category = "Weapon|IK")
+	FTransform GetWeaponGripWorldTransform() const;
+
+protected:
+	// 缓存的武器握持插槽世界变换，每帧由 UpdateWeaponIK 更新。
+	FTransform CachedWeaponGripTransform;
+
+public:
+
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 

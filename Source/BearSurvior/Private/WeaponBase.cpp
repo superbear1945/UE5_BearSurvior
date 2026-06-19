@@ -222,6 +222,39 @@ void AWeaponBase::HandleDurabilityDepleted() {
 }
 
 /**
+ * 返回武器握持插槽（GripSocket）的世界变换。
+ * 角色动画系统通过此接口获取左手 IK 的目标位置和朝向。
+ * 插槽名称从 ItemDataAsset 的 GripSocketName 字段读取。
+ * @return 握持插槽的世界变换；若插槽不存在或网格未加载则返回 FTransform::Identity。
+ */
+FTransform AWeaponBase::GetGripSocketWorldTransform() const
+{
+  if (!ItemDataAsset || ItemDataAsset->GripSocketName.IsNone())
+    return FTransform::Identity;
+
+  // 获取武器网格的根组件
+  UStaticMeshComponent* MeshComp = GetComponentByClass<UStaticMeshComponent>();
+  if (!MeshComp || !MeshComp->GetStaticMesh())
+    return FTransform::Identity;
+
+  // 在网格体上查找插槽
+  FTransform SocketTransform;
+  if (MeshComp->DoesSocketExist(ItemDataAsset->GripSocketName))
+  {
+    SocketTransform = MeshComp->GetSocketTransform(ItemDataAsset->GripSocketName);
+  }
+  else
+  {
+    // 插槽不存在时，以武器根位置作为兜底
+    SocketTransform = MeshComp->GetComponentTransform();
+    UE_LOG(LogTemp, Warning, TEXT("[%s] 握持插槽 [%s] 不存在于网格体，使用武器位置兜底"),
+      *GetNameSafe(this), *ItemDataAsset->GripSocketName.ToString());
+  }
+
+  return SocketTransform;
+}
+
+/**
  * 主要使用开始：武器默认在左键按下时尝试进入攻击状态。
  * AimLocation / AimDirection 由角色视角提供，子类可在覆盖时用于射线或弹道计算。
  */

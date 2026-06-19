@@ -15,6 +15,7 @@ struct FHitResult;
 class UStaticMeshComponent;
 class USoundBase;
 class ACharacter;
+class APlayerCameraManager;
 
 // 开火事件。
 // @param ImpactPoint 命中位置。
@@ -77,6 +78,7 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Range|Config")
   TEnumAsByte<ECollisionChannel> TraceChannel;
 
+
   // ────────────────────────────────────────── 状态
   // ──────────────────────────────────────────
 
@@ -113,6 +115,9 @@ protected:
 
   // 基础伤害值，从远程武器 DataAsset 读取。
   float CachedBaseDamage;
+
+  // 单次开火需要施加到玩家视角上的后坐力旋转量，从远程武器 DataAsset 读取。
+  FRotator CachedRecoilRotation;
 
   // 两次攻击输入之间的最短间隔，从远程武器 DataAsset 读取。
   float CachedAttackInterval;
@@ -271,6 +276,14 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Range")
   void SetAimTarget(AActor *NewAimTarget);
+
+  /**
+   * 对玩家摄像机施加一次单发后坐力旋转。
+   * 该函数用于在每次开火完成命中检测后，推动玩家视角产生一次瞬时抬枪/偏转效果。
+   * 当外部未传入 PlayerCameraManager 时，函数会尝试从当前武器持有者反查本地玩家控制器。
+   */
+  UFUNCTION(BlueprintCallable, Category = "Range|Camera")
+  void ApplyRecoilToCamera(APlayerCameraManager *PlayerCameraManager = nullptr);
 
 protected:
   virtual void BeginPlay() override;

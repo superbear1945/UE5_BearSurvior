@@ -155,6 +155,14 @@ public:
   UFUNCTION(BlueprintPure, Category = "Weapon|DataAsset")
   bool IsDataLoaded() const;
 
+  /**
+   * 返回武器握持插槽（GripSocket）的世界变换。
+   * 角色动画系统通过此接口获取左手 IK 的目标位置和朝向。
+   * @return 握持插槽的世界变换；若插槽不存在或网格未加载则返回 FTransform::Identity。
+   */
+  UFUNCTION(BlueprintPure, Category = "Weapon|IK")
+  FTransform GetGripSocketWorldTransform() const;
+
   // IUseableItem
   // 接口实现：武器默认将主要使用映射为攻击生命周期，次要使用留给子类扩展。
   virtual void PrimaryUseStart_Implementation(const FVector &AimLocation, const FVector &AimDirection) override;

@@ -73,4 +73,8 @@ public:
 	// 枪声资源，用于远程武器开火时提供对应音效资源引用。
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged|Audio")
 	TSoftObjectPtr<USoundBase> GunshotSound;
+
+	// 开火时的后坐力配置（可选），以旋转形式表示，默认无后坐力。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged|Combat")
+	FRotator RecoilRotation = FRotator::ZeroRotator;
 };

@@ -13,6 +13,7 @@
 #include "InputAction.h"
 #include "Math/MathFwd.h"
 #include "Weapon/IUseableItem.h"
+#include "Weapon/WeaponBase.h"
 #include "Component/HealthComponent.h"
 #include "InputActionValue.h"
 #include "Blueprint/UserWidget.h"
@@ -107,6 +108,9 @@ void ABearSurviorCharacter::ApplyMouseSensitivityFromSettings()
 void ABearSurviorCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	// 每帧更新武器握持插槽的 IK 缓存变换，供动画蓝图读取。
+	UpdateWeaponIK();
 }
 
 
@@ -445,6 +449,35 @@ void ABearSurviorCharacter::InitComponents()
 
 	// 创建 Widget 组件，用于显示角色的 3D UI。
 	// WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
+}
+
+/**
+ * 更新武器 IK 目标。计算当前持有武器的握持插槽世界变换并缓存。
+ * 动画蓝图通过 GetWeaponGripWorldTransform 读取缓存值来驱动 Control Rig 左手 IK。
+ */
+void ABearSurviorCharacter::UpdateWeaponIK()
+{
+	// 初始化为 Identity，表示无有效 IK 目标
+	CachedWeaponGripTransform = FTransform::Identity;
+
+	if (!CurrentHeldItem)
+		return;
+
+	// 只有 AWeaponBase 子类才有握持插槽
+	AWeaponBase* Weapon = Cast<AWeaponBase>(CurrentHeldItem);
+	if (!Weapon)
+		return;
+
+	CachedWeaponGripTransform = Weapon->GetGripSocketWorldTransform();
+}
+
+/**
+ * 返回当前持有武器的握持插槽世界变换。
+ * 每帧由 UpdateWeaponIK 更新缓存，未持有武器或无插槽时返回 Identity。
+ */
+FTransform ABearSurviorCharacter::GetWeaponGripWorldTransform() const
+{
+	return CachedWeaponGripTransform;
 }
 
 /**
