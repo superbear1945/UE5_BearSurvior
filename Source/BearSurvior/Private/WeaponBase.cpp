@@ -4,6 +4,7 @@
 
 #include "Weapon/WeaponBase.h"
 #include "Component/AttackComponentBase.h"
+#include "Component/RangeAttackComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
@@ -193,6 +194,14 @@ float AWeaponBase::GetAttackInterval() const {
  */
 float AWeaponBase::GetDefaultDurabilityCost() const {
   return ActiveAttackComponent ? ActiveAttackComponent->GetDefaultDurabilityCost() : 0.0f;
+}
+
+/**
+ * 返回当前武器挂载的远程攻击组件。
+ * 该接口用于向角色相机反馈等表现层系统暴露统一的远程武器访问入口。
+ */
+URangeAttackComponent* AWeaponBase::GetRangeAttackComponent() const {
+  return Cast<URangeAttackComponent>(ActiveAttackComponent);
 }
 
 /**

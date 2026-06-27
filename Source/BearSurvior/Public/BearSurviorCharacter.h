@@ -17,6 +17,7 @@ class UInputAction;
 class UMainGameUserSetting;
 class UUserWidget;
 class UHealthComponent;
+class UPlayerCameraFeedbackComponent;
 // class UWidgetComponent;
 class AItemBase;
 struct FInputActionValue;
@@ -79,9 +80,14 @@ protected:
 	// UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|3DUI")
 	// TObjectPtr<UWidgetComponent> WidgetComponent;
 
-	// 当前角色手中持有的物品
+	// 当前角色手中持有的物品。
+	// 角色通过该引用驱动物品使用、武器 IK，以及相机反馈组件对当前武器的监听更新。
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item")
 	TObjectPtr<AItemBase> CurrentHeldItem = nullptr;
+
+	// 玩家相机反馈组件，负责监听当前武器开火并施加后坐力等本地相机表现。
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component|Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPlayerCameraFeedbackComponent> PlayerCameraFeedbackComponent = nullptr;
 
 public:
 
@@ -163,6 +169,17 @@ public:
 
 	/** 从游戏用户设置同步鼠标灵敏度到角色，确保运行时输入参数与持久化设置一致。 */
 	void ApplyMouseSensitivityFromSettings();
+
+	/**
+	 * 设置当前角色手中持有的物品，并同步刷新依赖当前武器的运行时系统。
+	 * 后续所有装备、切枪、卸下逻辑建议统一通过该函数更新 CurrentHeldItem。
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Item")
+	virtual void SetCurrentHeldItem(AItemBase* NewHeldItem);
+
+	/** 返回当前角色手中持有的物品。 */
+	UFUNCTION(BlueprintPure, Category = "Item")
+	AItemBase* GetCurrentHeldItem() const;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")

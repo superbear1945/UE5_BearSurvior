@@ -13,6 +13,7 @@
 #include "WeaponBase.generated.h"
 
 class UAttackComponentBase;
+class URangeAttackComponent;
 class AWeaponBase;
 
 // 武器耐久耗尽事件。
@@ -142,6 +143,13 @@ public:
   /** 返回默认耐久消耗（由当前攻击组件提供）。 */
   UFUNCTION(BlueprintPure, Category = "Weapon|Durability")
   float GetDefaultDurabilityCost() const;
+
+  /**
+   * 返回当前武器挂载的远程攻击组件。
+   * 当武器不是远程武器，或当前攻击组件不是 URangeAttackComponent 时返回空指针。
+   */
+  UFUNCTION(BlueprintPure, Category = "Weapon|Attack")
+  URangeAttackComponent* GetRangeAttackComponent() const;
 
   /** 返回武器是否已损坏（耐久度 <= 0）。 */
   UFUNCTION(BlueprintPure, Category = "Weapon|Durability")

@@ -93,3 +93,6 @@ worktrees/**
 .clangd
 # Windows 空设备名误重定向时可能生成的本地空文件
 nul
+
+#nvim本地配置
+.nvim.lua

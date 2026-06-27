@@ -5,9 +5,7 @@
 #include "Component/HealthComponent.h"
 #include "ItemBase.h"
 #include "Weapon/WeaponBase.h"
-#include "Camera/PlayerCameraManager.h"
 #include "GameFramework/Character.h"
-#include "GameFramework/PlayerController.h"
 #include "Engine/HitResult.h"
 #include "Engine.h"
 #include "Engine/World.h"
@@ -86,7 +84,7 @@ void URangeAttackComponent::ResolveWeaponData()
 
 	// 从 DataAsset 直接读取字段并缓存到组件本地标量字段。
 	CachedBaseDamage = DataAsset->BaseDamage;
-  CachedRecoilRotation = DataAsset->RecoilRotation;
+	CachedRecoilRotation = DataAsset->RecoilRotation;
 	CachedAttackInterval = DataAsset->AttackInterval;
 	CachedFireRate = DataAsset->FireRate;
 	CachedMagazineCapacity = DataAsset->MagazineCapacity;
@@ -596,31 +594,10 @@ void URangeAttackComponent::OnUnEquip(ACharacter *CharacterOwner)
 }
 
 /**
- * 对玩家视角施加一次后坐力输入。
- * 当外部未传入 PlayerCameraManager 时，会尝试从武器持有者的玩家控制器中自动获取上下文。
+ * 返回当前远程武器单次开火的后坐力旋转配置。
+ * 该数据由相机反馈组件在收到开火事件后读取，并决定如何施加到本地玩家视角上。
  */
-void URangeAttackComponent::UseRecoil(APlayerCameraManager *PlayerCameraManager)
+FRotator URangeAttackComponent::GetRecoilRotation() const
 {
-	APlayerController* TargetPlayerController = nullptr;
-	if (PlayerCameraManager)
-		TargetPlayerController = Cast<APlayerController>(PlayerCameraManager->GetOwningPlayerController());
-
-	if (TargetPlayerController == nullptr)
-	{
-		const AWeaponBase* WeaponOwner = Cast<AWeaponBase>(GetOwner());
-		if (!WeaponOwner)
-			return;
-
-		const APawn* InstigatorPawn = WeaponOwner->GetInstigator();
-		if (!InstigatorPawn)
-			return;
-
-		TargetPlayerController = Cast<APlayerController>(InstigatorPawn->GetController());
-	}
-
-	if (TargetPlayerController == nullptr)
-		return;
-
-	TargetPlayerController->AddPitchInput(-CachedRecoilRotation.Pitch);
-	TargetPlayerController->AddYawInput(CachedRecoilRotation.Yaw);
+	return CachedRecoilRotation;
 }

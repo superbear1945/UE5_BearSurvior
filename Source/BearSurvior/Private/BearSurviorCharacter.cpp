@@ -15,6 +15,7 @@
 #include "Weapon/IUseableItem.h"
 #include "Weapon/WeaponBase.h"
 #include "Component/HealthComponent.h"
+#include "Component/PlayerCameraFeedbackComponent.h"
 #include "InputActionValue.h"
 #include "Blueprint/UserWidget.h"
 // #include "Components/WidgetComponent.h"
@@ -447,6 +448,9 @@ void ABearSurviorCharacter::InitComponents()
 	// UActorComponent 不需要 Attach 操作，创建后自动归属于宿主 Actor。
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
+	// 创建玩家相机反馈组件，统一处理后坐力、回弹和其它本地相机表现逻辑。
+	PlayerCameraFeedbackComponent = CreateDefaultSubobject<UPlayerCameraFeedbackComponent>(TEXT("PlayerCameraFeedbackComponent"));
+
 	// 创建 Widget 组件，用于显示角色的 3D UI。
 	// WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComponent"));
 }
@@ -478,6 +482,26 @@ void ABearSurviorCharacter::UpdateWeaponIK()
 FTransform ABearSurviorCharacter::GetWeaponGripWorldTransform() const
 {
 	return CachedWeaponGripTransform;
+}
+
+/**
+ * 设置当前角色手中持有的物品，并同步刷新依赖当前持有物的系统状态。
+ * 当前主要用于让相机反馈组件及时切换监听的武器对象。
+ */
+void ABearSurviorCharacter::SetCurrentHeldItem(AItemBase* NewHeldItem)
+{
+	CurrentHeldItem = NewHeldItem;
+
+	if (PlayerCameraFeedbackComponent)
+		PlayerCameraFeedbackComponent->RefreshObservedWeaponFromOwner();
+}
+
+/**
+ * 返回当前角色手中持有的物品。
+ */
+AItemBase* ABearSurviorCharacter::GetCurrentHeldItem() const
+{
+	return CurrentHeldItem;
 }
 
 /**
