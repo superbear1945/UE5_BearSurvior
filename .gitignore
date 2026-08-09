@@ -25,6 +25,18 @@
 *.a
 *.lib
 
+# PuerTS：ThirdParty 下的预编译运行时后端（V8 / Node / QuickJS / FFI 等）体积巨大（可达 GB 级）
+# 且平台相关，不应纳入版本控制；需要时用官方 make_puerts_libs.js / backend releases 重新获取。
+# 保留入库的仅有：源码构建所需的纯头文件库 ThirdParty/Include/ 与 Libnode_APL.xml。
+Plugins/Puerts/ThirdParty/v8_*/
+Plugins/Puerts/ThirdParty/nodejs*/
+Plugins/Puerts/ThirdParty/quickjs*/
+Plugins/Puerts/ThirdParty/Library/
+
+# PuerTS 内嵌 C# 工程（CSharpParamDefaultValueMetas 等）的构建生成物不入库
+Plugins/Puerts/Source/**/obj/
+Plugins/Puerts/Source/**/bin/
+
 # Executables
 *.exe
 *.out
@@ -91,9 +103,14 @@ DerivedDataCache/*
 
 worktrees/**
 .clangd
+
 # Windows 空设备名误重定向时可能生成的本地空文件
 nul
+**/nul
 
 #nvim本地配置
 .nvim.lua
 .idea/
+
+# 用于直接命令行执行UBT的bat脚本，方便在neovim等非IDE环境下编译
+./build.bat
