@@ -39,6 +39,10 @@
 		{
 			"Name": "UE_MCP_Bridge",
 			"Enabled": true
-		}
+		},
+    {
+      "Name": "Puerts",
+      "Enabled": true
+    }
 	]
 }
