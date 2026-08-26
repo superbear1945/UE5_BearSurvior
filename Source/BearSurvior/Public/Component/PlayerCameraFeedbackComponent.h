@@ -28,6 +28,12 @@ class BEARSURVIOR_API UPlayerCameraFeedbackComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	/** 在游戏开始时缓存宿主角色引用，并按当前持武器状态建立初始监听关系。 */
+	virtual void BeginPlay() override;
+
+	/** 在组件结束播放时解绑事件，避免残留动态委托引用。 */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	
 	/** 构造函数，初始化组件默认配置。 */
 	UPlayerCameraFeedbackComponent();
 
@@ -53,12 +59,6 @@ public:
 	void ClearObservedWeapon();
 
 protected:
-	/** 在游戏开始时缓存宿主角色引用，并按当前持武器状态建立初始监听关系。 */
-	virtual void BeginPlay() override;
-
-	/** 在组件结束播放时解绑事件，避免残留动态委托引用。 */
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
 	/**
 	 * 处理监听到的远程武器开火事件。
 	 * 该回调只负责把“开火发生”转换成“相机效果输入”，不关心命中结果本身。
